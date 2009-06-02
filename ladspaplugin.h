@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2003 Fons Adriaensen
-    
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -20,10 +20,7 @@
 #ifndef __LADSPAPLUGIN_H
 #define __LADSPAPLUGIN_H
 
-
 #include "ladspa.h" // use local version
-
-
 
 class LadspaPlugin
 {
@@ -31,9 +28,9 @@ public:
 
   LadspaPlugin (unsigned long fsam) : _gain (1.0), _fsam (fsam) {}
 
-  virtual void setport (unsigned long port, LADSPA_Data *data) = 0;  
-  virtual void active  (bool act) = 0;  
-  virtual void runproc (unsigned long len, bool add) = 0;  
+  virtual void setport (unsigned long port, LADSPA_Data *data) = 0;
+  virtual void active  (bool act) = 0;
+  virtual void runproc (unsigned long len, bool add) = 0;
   virtual ~LadspaPlugin (void) {}
 
   void setgain (LADSPA_Data gain) { _gain = gain; }
@@ -43,7 +40,5 @@ protected:
   float _gain;
   float _fsam;
 };
-
-
 
 #endif

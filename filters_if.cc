@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2004 Fons Adriaensen
-    
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -19,16 +19,13 @@
 //-----------------------------------------------------------------------------------
 // Common definitions
 
-
 #include "filters.h"
 
 #define NMODS 1
 #define VERSION "0.1.0"
 
-
 static const char* maker = "Fons Adriaensen <fons.adriaensen@alcatel.be>";
 static const char* copyr = "GPL";
-
 
 static void pconnect (LADSPA_Handle H, unsigned long port, LADSPA_Data *data)
 {
@@ -44,6 +41,7 @@ static void runplugin (LADSPA_Handle H, unsigned long k)
 {
     ((LadspaPlugin *)H)->runproc (k, false);
 }
+
 /*
 static void runadding (LADSPA_Handle H, unsigned long k)
 {
@@ -55,6 +53,7 @@ static void setadding (LADSPA_Handle H, LADSPA_Data gain)
     ((LadspaPlugin *)H)->setgain (gain);
 }
 */
+
 static void deactivate (LADSPA_Handle H)
 {
     ((LadspaPlugin *)H)->active (false);
@@ -68,18 +67,15 @@ static void cleanup (LADSPA_Handle H)
 //-----------------------------------------------------------------------------------
 // Plugin definitions
 
-
 static const char* label0 = "Parametric1";
 static const char* name0  = "4-band parametric filter";
-
 
 static LADSPA_Handle instant0 (const struct _LADSPA_Descriptor *desc, unsigned long rate)
 {
     return new Ladspa_Paramfilt (rate);
 }
 
-
-static const LADSPA_PortDescriptor pdesc0 [Ladspa_Paramfilt::NPORT] = 
+static const LADSPA_PortDescriptor pdesc0 [Ladspa_Paramfilt::NPORT] =
 {
     LADSPA_PORT_INPUT  | LADSPA_PORT_AUDIO,
     LADSPA_PORT_OUTPUT | LADSPA_PORT_AUDIO,
@@ -103,8 +99,7 @@ static const LADSPA_PortDescriptor pdesc0 [Ladspa_Paramfilt::NPORT] =
     LADSPA_PORT_INPUT  | LADSPA_PORT_CONTROL
 };
 
-
-static const char * const pname0  [Ladspa_Paramfilt::NPORT] = 
+static const char * const pname0  [Ladspa_Paramfilt::NPORT] =
 {
   "Input",
   "Output",
@@ -128,8 +123,7 @@ static const char * const pname0  [Ladspa_Paramfilt::NPORT] =
   "Gain 4"
 };
 
-
-static const LADSPA_PortRangeHint phint0 [Ladspa_Paramfilt::NPORT] = 
+static const LADSPA_PortRangeHint phint0 [Ladspa_Paramfilt::NPORT] =
 {
   { 0, 0, 0 },
   { 0, 0, 0 },
@@ -153,7 +147,6 @@ static const LADSPA_PortRangeHint phint0 [Ladspa_Paramfilt::NPORT] =
   { LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_DEFAULT_0, -20, 20 }
 };
 
-
 static const LADSPA_Descriptor moddescr [NMODS] =
 {
   {
@@ -176,7 +169,7 @@ static const LADSPA_Descriptor moddescr [NMODS] =
     0,
     deactivate,
     cleanup
-  }  
+  }
 };
 
 extern "C" const LADSPA_Descriptor *ladspa_descriptor (unsigned long i)
@@ -184,5 +177,3 @@ extern "C" const LADSPA_Descriptor *ladspa_descriptor (unsigned long i)
   if (i >= NMODS) return 0;
   return moddescr + i;
 }
-
-//-----------------------------------------------------------------------------------
