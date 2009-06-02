@@ -34,7 +34,7 @@ public:
     {
         _f = 0.25;
         _b = _g = 1.0;
-	_a = _s1 = _s2 = _z1 = _z2 = 0.0;
+        _a = _s1 = _s2 = _z1 = _z2 = 0.0;
     }
     
     void proc (int k, float *sig, float f, float b, float g)
@@ -50,44 +50,44 @@ public:
         da = 0;
 
         if (f != _f)
-	{
-  	    if      (f < 0.5 * _f) f = 0.5 * _f;
+        {
+            if      (f < 0.5 * _f) f = 0.5 * _f;
             else if (f > 2.0 * _f) f = 2.0 * _f;
             _f = f;
             _s1 = -cos (2 * M_PI * f);
             d1 = (_s1 - s1) / k;           
             u2 = true;
-	}             
+        }             
        
         if (g != _g)
-	{
+        {
             if      (g < 0.5 * _g) g = 0.5 * _g;
             else if (g > 2.0 * _g) g = 2.0 * _g;
-	    _g = g;
+            _g = g;
             _a = 0.5 * (g - 1.0);
             da = (_a - a) / k;
             u2 = true;
-	}
+        }
 
         if (b != _b)
-	{
+        {
             if      (b < 0.5 * _b) b = 0.5 * _b;
             else if (b > 2.0 * _b) b = 2.0 * _b;
             _b = b; 
             u2 = true;
-	}
+        }
 
         if (u2)
-	{
+        {
             b *= 4 * f;         
             _s2 = (1 + _a - b) / (1 + _a + b);
             d2 = (_s2 - s2) / k;        
-	}
+        }
 
         while (k--)
-	{  
-	    s1 += d1;
-	    s2 += d2;
+        {  
+            s1 += d1;
+            s2 += d2;
             a += da;
             x = *sig;
             y = x - s2 * _z2;
@@ -95,7 +95,7 @@ public:
             y -= s1 * _z1;
             _z2 = _z1 + s1 * y;
             _z1 = y + 1e-10;
-	}
+        }
     }
     
 private:

@@ -56,7 +56,7 @@ void Ladspa_Paramfilt::runproc (unsigned long len, bool add)
     fgain = exp2ap (0.1661 * _port [GAIN][0]);
     for (j = 0; j < NSECT; j++)
     {
-	t = _port [SECT + 4 * j + Paramsect::FREQ][0] / _fsam; 
+        t = _port [SECT + 4 * j + Paramsect::FREQ][0] / _fsam; 
         if (t < 0.0002) t = 0.0002;
         if (t > 0.4998) t = 0.4998;
         sfreq [j] = t;        
@@ -76,40 +76,40 @@ void Ladspa_Paramfilt::runproc (unsigned long len, bool add)
         _gain = t;
         d = (t - g) / k;
         for (i = 0; i < k; i++) 
-	{
-	    g += d;
+        {
+            g += d;
             sig [i] = g * aip [i];
-	}
+        }
 
         for (j = 0; j < NSECT; j++) _sect [j].proc (k, sig, sfreq [j], sband [j], sgain [j]);
                   
         j = _fade;
         g = j / 16.0;
-	p = 0;
-	if (_port [FILT][0] > 0)
-	{
-	    if (j == 16) p = sig;
-	    else ++j;
-	}
-	else
-	{
-	    if (j == 0) p = aip;
-	    else --j;
-	}
-	_fade = j;  
-	if (p) memcpy (aop, p, k * sizeof (float));
-	else
-	{
-	    d = (j / 16.0 - g) / k;
-	    for (i = 0; i < k; i++)
-	    {
-		g += d;
-		aop [i] = g * sig [i] + (1 - g) * aip [i];
-	    }
-	}
-	aip += k;
-	aop += k;
-	len -= k;
+        p = 0;
+        if (_port [FILT][0] > 0)
+        {
+            if (j == 16) p = sig;
+            else ++j;
+        }
+        else
+        {
+            if (j == 0) p = aip;
+            else --j;
+        }
+        _fade = j;  
+        if (p) memcpy (aop, p, k * sizeof (float));
+        else
+        {
+            d = (j / 16.0 - g) / k;
+            for (i = 0; i < k; i++)
+            {
+                g += d;
+                aop [i] = g * sig [i] + (1 - g) * aip [i];
+            }
+        }
+        aip += k;
+        aop += k;
+        len -= k;
     }
 }
 
