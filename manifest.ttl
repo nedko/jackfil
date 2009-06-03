@@ -1,7 +1,8 @@
 @prefix lv2:  <http://lv2plug.in/ns/lv2core#>.
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
 
-<http://home.gna.org/zyn/zynadd/1>
-  a lv2:Plugin, lv2:InstrumentPlugin;
-  lv2:binary <zynadd.so>;
-  rdfs:seeAlso <zynadd.ttl>.
+<http://nedko.aranaudov.org/soft/filter/1>
+  a lv2:Plugin;
+  a lv2:FilterPlugin;
+  lv2:binary <filter.so>;
+  rdfs:seeAlso <filter.ttl>.
