@@ -11,7 +11,7 @@
     a uiext:external;
     uiext:binary <filter.so>.
 
-<http://nedko.aranaudov.org/soft/filter/1>
+<http://nedko.aranaudov.org/soft/filter/1/mono>
   a lv2:Plugin;
   a lv2:FilterPlugin;
   doap:maintainer [

@@ -28,7 +28,7 @@
 static LV2_Descriptor g_lv2_plugins[] =
 {
   {
-    .URI = "http://nedko.aranaudov.org/soft/filter/1",
+    .URI = "http://nedko.aranaudov.org/soft/filter/1/mono",
     .instantiate = lv2filter_instantiate,
     .connect_port = lv2filter_connect_port,
     .run = lv2filter_run,
