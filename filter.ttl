@@ -5,6 +5,11 @@
 @prefix foaf: <http://xmlns.com/foaf/0.1/>.
 @prefix ue: <http://lv2plug.in/ns/extensions/units#> .
 @prefix epp: <http://lv2plug.in/ns/dev/extportinfo#> .
+@prefix uiext: <http://lv2plug.in/ns/extensions/ui#> .
+
+<http://nedko.aranaudov.org/soft/filter/1/gui>
+    a uiext:external;
+    uiext:binary <filter.so>.
 
 <http://nedko.aranaudov.org/soft/filter/1>
   a lv2:Plugin;
@@ -16,6 +21,8 @@
   ];
   doap:name "4-band parametric filter";
   doap:license <http://usefulinc.com/doap/licenses/gpl>;
+
+  uiext:ui <http://nedko.aranaudov.org/soft/filter/1/gui>;
 
   lv2:port [
     a lv2:InputPort, lv2:AudioPort;
