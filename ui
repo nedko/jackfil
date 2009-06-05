@@ -25,7 +25,7 @@ import re
 import time
 import xml.dom.minidom
 import cairo
-from math import pi, sin, cos, atan2
+from math import pi, sin, cos, atan2, log
 from colorsys import hls_to_rgb, rgb_to_hls
 import liblo
 import copy
@@ -114,8 +114,7 @@ class KnobTooltip:
         vbox.connect('expose-event', self.on_tooltip_expose)
 
     def show_tooltip(self, knob):
-        text = knob.format_value(knob.value)
-        self.tooltip.set_text(knob.format_value(knob.max_value))
+        text = knob.format_value()
         rc = knob.get_allocation()
         x,y = knob.window.get_origin()
         self.tooltip_window.show_all()
@@ -153,6 +152,41 @@ def get_knob_tooltip():
         knob_tooltip = KnobTooltip()
     return knob_tooltip
 
+class SmartAdjustment(gtk.Adjustment):
+    def __init__(self, log=False, value=0, lower=0, upper=0, step_incr=0, page_incr=0, page_size=0):
+        self.log = log
+        gtk.Adjustment.__init__(self, value, lower, upper, step_incr, page_incr, page_size)
+        self.normalized_value = self.real2norm(self.value)
+
+    def real2norm(self, value):
+        if self.log:
+            return log(value / self.lower, self.upper / self.lower)
+        else:
+            return (value - self.lower) / (self.upper - self.lower)
+
+    def norm2real(self, value):
+        if self.log:
+            return self.lower * pow(self.upper / self.lower, value)
+        else:
+            return value * (self.upper - self.lower) + self.lower
+
+    def set_value(self, value):
+        self.normalized_value = self.real2norm(value)
+        gtk.Adjustment.set_value(self, value)
+
+    def get_normalized_value(self):
+        return self.normalized_value
+
+    def set_normalized_value(self, value):
+        self.normalized_value = value
+
+        if self.normalized_value < 0.0:
+            self.normalized_value = 0.0
+        elif self.normalized_value > 1.0:
+            self.normalized_value = 1.0
+
+        self.set_value(self.norm2real(self.normalized_value))
+
 class Knob(gtk.VBox):
     def __init__(self):
         gtk.VBox.__init__(self)
@@ -184,9 +218,9 @@ class Knob(gtk.VBox):
         self.adj = None
 
     def set_adjustment(self, adj):
-        self.min_value = adj.lower
-        self.max_value = adj.upper
-        self.value = adj.value
+        self.min_value = 0.0
+        self.max_value = 1.0
+        self.value = adj.get_normalized_value()
         if self.adj:
             self.adj.disconnect(self.adj_id)
         self.adj = adj
@@ -195,7 +229,11 @@ class Knob(gtk.VBox):
     def is_sensitive(self):
         return self.get_property("sensitive")
 
-    def format_value(self, value):
+    def format_value(self):
+        if self.adj:
+            value = self.adj.value
+        else:
+            value = self.value
         return ("%%.%if" % self.digits) % value
 
     def show_tooltip(self):
@@ -246,8 +284,9 @@ class Knob(gtk.VBox):
         return value
 
     def on_adj_value_changed(self, adj):
-        if self.value != adj.value:
-            self.value = adj.value
+        new_value = adj.get_normalized_value()
+        if self.value != new_value:
+            self.value = new_value
             self.refresh()
 
     def set_value(self, value):
@@ -255,7 +294,7 @@ class Knob(gtk.VBox):
         self.value = min(max(self.quantize_value(value), self.min_value), self.max_value)
         if self.value != oldval:
             if self.adj:
-                self.adj.set_value(value)
+                self.adj.set_normalized_value(value)
             self.refresh()
 
     def get_value(self):
@@ -689,7 +728,7 @@ class filter_ui(dssi_ui):
         self.ports.append(port)
         self.add_param_box(master_box, self.create_toggle_box(port))
 
-        port = {'index': 1, 'name': 'Gain', 'type': 'knob', 'min': -20.0, 'max': 20.0, 'unit': 'dB'}
+        port = {'index': 1, 'name': 'Gain', 'type': 'knob', 'min': -20.0, 'max': 20.0, 'unit': 'dB', 'log': False}
         self.ports.append(port)
         self.add_param_box(master_box, self.create_knob_box(port))
 
@@ -697,9 +736,9 @@ class filter_ui(dssi_ui):
 
         band_parameters = [
             {'name': 'Active', 'type': 'toggle'},
-            {'name': 'Frequency', 'type': 'knob', 'unit': 'Hz'},
-            {'name': 'Bandwidth', 'type': 'knob', 'min': 0.125, 'max': 8.0, 'unit': ''},
-            {'name': 'Gain', 'type': 'knob', 'min': -20.0, 'max': 20.0, 'unit': 'dB'}]
+            {'name': 'Frequency', 'type': 'knob', 'unit': 'Hz', 'log': True},
+            {'name': 'Bandwidth', 'type': 'knob', 'min': 0.125, 'max': 8.0, 'unit': '', 'log': True},
+            {'name': 'Gain', 'type': 'knob', 'min': -20.0, 'max': 20.0, 'unit': 'dB', 'log': False}]
 
         freq_min = [  20.0,   40.0,   100.0,   200.0]
         freq_max = [2000.0, 4000.0, 10000.0, 20000.0]
@@ -741,7 +780,7 @@ class filter_ui(dssi_ui):
     def create_knob_box(self, port):
         param_box = gtk.VBox()
         step = (port['max'] - port['min']) / 100
-        adj = gtk.Adjustment(port['min'], port['min'], port['max'], step, step * 20)
+        adj = SmartAdjustment(port['log'], port['min'], port['min'], port['max'], step, step * 20)
         adj.port = port
         port['adj'] = adj
 
