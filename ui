@@ -587,6 +587,13 @@ class Knob(gtk.VBox):
 
 class dssi_ui:
     def __init__(self, argv):
+        self.fake = len(argv) == 1
+
+        if self.fake:
+            self.label = self.human_id = "fake"
+            self.shown = False
+            return
+
         print repr(argv)
         self.host_osc_url = argv[1]
         self.plugin_uri = argv[2]
@@ -600,16 +607,28 @@ class dssi_ui:
         self.send_update()
 
     def send_update(self):
+        if self.fake:
+            return
         #print "UI -> update -> host"
         liblo.send(self.host_osc_url, "//update", self.server.get_url())
 
     def send_port_value(self, port_index, value):
+        if self.fake:
+            return
         liblo.send(self.host_osc_url, "//control", int(port_index), float(value))
 
     def send_exiting(self):
+        if self.fake:
+            return
         liblo.send(self.host_osc_url, "//exiting")
 
     def run(self):
+        if self.fake:
+            if not self.shown:
+                self.shown = True
+                self.on_show()
+            return
+
         while self.server.recv(0):
             pass
 
@@ -833,7 +852,7 @@ class filter_ui(dssi_ui):
         gtk.main_quit()
 
 def main():
-    ui = filter_ui(sys.argv).run()
+    filter_ui(sys.argv).run()
     print "main done"
 
 if __name__ == '__main__':
