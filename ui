@@ -670,7 +670,7 @@ class filter_ui(dssi_ui):
         self.ports.append(port)
         self.add_param_box(master_box, self.create_toggle_box(port))
 
-        port = {'index': 1, 'name': 'Gain', 'type': 'knob', 'min': -20.0, 'max': 20.0}
+        port = {'index': 1, 'name': 'Gain', 'type': 'knob', 'min': -20.0, 'max': 20.0, 'unit': 'dB'}
         self.ports.append(port)
         self.add_param_box(master_box, self.create_knob_box(port))
 
@@ -678,9 +678,9 @@ class filter_ui(dssi_ui):
 
         band_parameters = [
             {'name': 'Active', 'type': 'toggle'},
-            {'name': 'Frequency', 'type': 'knob'},
-            {'name': 'Bandwidth', 'type': 'knob', 'min': 0.125, 'max': 8.0},
-            {'name': 'Gain', 'type': 'knob', 'min': -20.0, 'max': 20.0}]
+            {'name': 'Frequency', 'type': 'knob', 'unit': 'Hz'},
+            {'name': 'Bandwidth', 'type': 'knob', 'min': 0.125, 'max': 8.0, 'unit': ''},
+            {'name': 'Gain', 'type': 'knob', 'min': -20.0, 'max': 20.0, 'unit': 'dB'}]
 
         freq_min = [  20.0,   40.0,   100.0,   200.0]
         freq_max = [2000.0, 4000.0, 10000.0, 20000.0]
@@ -734,6 +734,11 @@ class filter_ui(dssi_ui):
         align.add(knob)
         param_box.pack_start(align, False)
 
+        adj.label = gtk.Label("xxx")
+        param_box.pack_start(adj.label, False)
+        #spin = gtk.SpinButton(adj, 0.0, 2)
+        #param_box.pack_start(spin, False)
+
         label = gtk.Label(port['name'])
         param_box.pack_start(label, False)
         return param_box
@@ -758,9 +763,23 @@ class filter_ui(dssi_ui):
         container.pack_start(align, True)
 
     def on_adj_value_changed(self, adj):
+        value = adj.get_value()
+        if value >= 10000:
+            format = "%.0f"
+        elif value >= 1000:
+            format = "%.1f"
+        else:
+            format = "%.2f"
+        text = format % value
+        unit = adj.port['unit']
+        if unit:
+            text += " " + unit
+
+        adj.label.set_text(text)
+
         if self.initator:
             #print adj.port, adj.get_value()
-            self.send_port_value(adj.port['index'] + self.port_base, adj.get_value())
+            self.send_port_value(adj.port['index'] + self.port_base, value)
 
     def on_button_toggled(self, widget):
         if self.initator:
