@@ -721,7 +721,8 @@ class filter_ui(dssi_ui):
         freq_min = [  20.0,   40.0,   100.0,   200.0]
         freq_max = [2000.0, 4000.0, 10000.0, 20000.0]
 
-        port_index = 2
+        self.port_base = 2
+        port_index = self.port_base
 
         for i in [0, 1, 2, 3]:
             band_frame = gtk.Frame("Band %d" % (i + 1))
@@ -785,7 +786,7 @@ class filter_ui(dssi_ui):
     def on_adj_value_changed(self, adj):
         if self.initator:
             #print adj.port, adj.get_value()
-            self.send_port_value(adj.port['index'], adj.get_value())
+            self.send_port_value(adj.port['index'] + self.port_base, adj.get_value())
 
     def on_button_toggled(self, widget):
         if self.initator:
@@ -793,7 +794,7 @@ class filter_ui(dssi_ui):
                 value = 1.0
             else:
                 value = 0.0
-            self.send_port_value(widget.port['index'], value)
+            self.send_port_value(widget.port['index'] + self.port_base, value)
 
     def run(self):
         self.window.connect("destroy", self.on_window_closed)
@@ -806,7 +807,7 @@ class filter_ui(dssi_ui):
 
     def on_port_value_changed(self, port_index, port_value):
         #print "port %d set to %f" % (port_index, port_value)
-        port_index -= 2
+        port_index -= self.port_base
         port = self.ports[port_index]
         port_type = port['type']
         if port_type == 'knob':
