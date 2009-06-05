@@ -666,49 +666,13 @@ class filter_ui(dssi_ui):
         master_box = gtk.VBox()
         master_box.set_spacing(5)
 
-        param_box = gtk.VBox()
         port = {'index': 0, 'name': 'Active', 'type': 'toggle'}
         self.ports.append(port)
+        self.add_param_box(master_box, self.create_toggle_box(port))
 
-        button = gtk.CheckButton(port['name'])
-        button.port = port
-
-        button.connect("toggled", self.on_button_toggled)
-
-        align = gtk.Alignment(0.5, 0.5, 0, 0)
-        align.add(button)
-        param_box.pack_start(align, False)
-
-        align = gtk.Alignment(0.5, 0.5, 1.0, 1.0)
-        align.set_padding(10, 10, 10, 10)
-        align.add(param_box)
-
-        master_box.pack_start(align, True)
-
-        param_box = gtk.VBox()
         port = {'index': 1, 'name': 'Gain', 'type': 'knob', 'min': -20.0, 'max': 20.0}
-        step = (port['max'] - port['min']) / 100
-        adj = gtk.Adjustment(port['min'], port['min'], port['max'], step, step * 20)
-        adj.port = port
-        port['adj'] = adj
         self.ports.append(port)
-
-        adj.connect("value-changed", self.on_adj_value_changed)
-
-        knob = Knob()
-        knob.set_adjustment(adj)
-        align = gtk.Alignment(0.5, 0.5, 0, 0)
-        align.add(knob)
-        param_box.pack_start(align, False)
-
-        label = gtk.Label(port['name'])
-        param_box.pack_start(label, False)
-
-        align = gtk.Alignment(0.5, 0.5, 1.0, 1.0)
-        align.set_padding(10, 10, 10, 10)
-        align.add(param_box)
-
-        master_box.pack_start(align, True)
+        self.add_param_box(master_box, self.create_knob_box(port))
 
         self.param_hbox.pack_start(master_box, True, True)
 
@@ -743,45 +707,55 @@ class filter_ui(dssi_ui):
 
                 self.ports.append(port)
 
-                param_box = gtk.VBox()
                 #param_box.set_spacing(5)
                 if port['type'] == 'knob':
-                    step = (port['max'] - port['min']) / 100
-                    adj = gtk.Adjustment(port['min'], port['min'], port['max'], step, step * 20)
-                    adj.port = port
-                    port['adj'] = adj
-
-                    adj.connect("value-changed", self.on_adj_value_changed)
-
-                    knob = Knob()
-                    knob.set_adjustment(adj)
-                    align = gtk.Alignment(0.5, 0.5, 0, 0)
-                    align.add(knob)
-                    param_box.pack_start(align, False)
-
-                    label = gtk.Label(port['name'])
-                    param_box.pack_start(label, False)
+                    self.add_param_box(band_box, self.create_knob_box(port))
                 elif port['type'] == 'toggle':
-                    button = gtk.CheckButton(port['name'])
-                    button.port = port
-
-                    button.connect("toggled", self.on_button_toggled)
-
-                    align = gtk.Alignment(0.5, 0.5, 0, 0)
-                    align.add(button)
-                    param_box.pack_start(align, False)
-
-                align = gtk.Alignment(0.5, 0.5, 1.0, 1.0)
-                align.set_padding(10, 10, 10, 10)
-                align.add(param_box)
-
-                band_box.pack_start(align, True)
+                    self.add_param_box(band_box, self.create_toggle_box(port))
 
             band_frame.add(band_box)
 
             self.param_hbox.pack_start(band_frame, True, True)
 
         self.initator = True
+
+    def create_knob_box(self, port):
+        param_box = gtk.VBox()
+        step = (port['max'] - port['min']) / 100
+        adj = gtk.Adjustment(port['min'], port['min'], port['max'], step, step * 20)
+        adj.port = port
+        port['adj'] = adj
+
+        adj.connect("value-changed", self.on_adj_value_changed)
+
+        knob = Knob()
+        knob.set_adjustment(adj)
+        align = gtk.Alignment(0.5, 0.5, 0, 0)
+        align.add(knob)
+        param_box.pack_start(align, False)
+
+        label = gtk.Label(port['name'])
+        param_box.pack_start(label, False)
+        return param_box
+
+    def create_toggle_box(self, port):
+        param_box = gtk.VBox()
+        button = gtk.CheckButton(port['name'])
+        button.port = port
+
+        button.connect("toggled", self.on_button_toggled)
+
+        align = gtk.Alignment(0.5, 0.5, 0, 0)
+        align.add(button)
+        param_box.pack_start(align, False)
+        return param_box
+
+    def add_param_box(self, container, param_box):
+        align = gtk.Alignment(0.5, 0.5, 1.0, 1.0)
+        align.set_padding(10, 10, 10, 10)
+        align.add(param_box)
+
+        container.pack_start(align, True)
 
     def on_adj_value_changed(self, adj):
         if self.initator:
