@@ -156,7 +156,7 @@ filter_create(
     goto fail;
   }
 
-  filter_ptr->band_parameters = calloc(bands_count, sizeof(float) * BAND_PARAMETERS_COUNT);
+  filter_ptr->band_parameters = calloc(bands_count, sizeof(float *) * BAND_PARAMETERS_COUNT);
   if (filter_ptr->band_parameters == NULL)
   {
     goto free_filter;
