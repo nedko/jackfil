@@ -6,7 +6,7 @@
 # CFLAGS := -g -fPIC -DPIC -Wall -Werror
 
 # the following two variables are used by the target "waf dist"
-VERSION='1'
+VERSION='1.1'
 APPNAME='lv2fil'
 
 # these variables are mandatory ('/' are converted automatically)
