@@ -902,8 +902,8 @@ class filter_ui(dssi_ui):
 
         self.ports = []
 
-        first_box = gtk.VBox()
-        first_box.set_spacing(5)
+        misc_box = gtk.VBox()
+        misc_box.set_spacing(5)
 
         master_frame = gtk.Frame("Master")
         master_frame.set_label_align(0.5, 0.5)
@@ -920,19 +920,25 @@ class filter_ui(dssi_ui):
         self.add_param_box(master_box, self.create_knob_box(port))
 
         master_frame.add(master_box)
-        first_box.pack_start(master_frame, False, False)
+        misc_box.pack_start(master_frame, False, False)
 
         #logo = gtk.Image()
         #logo.set_from_pixbuf(self.lv2logo)
-        #first_box.pack_start(logo, True)
+        #misc_box.pack_start(logo, True, True)
 
-        about_button = gtk.Button("About")
-        about_button.connect("clicked", self.on_about)
-        align = gtk.Alignment(1.0, 1.0, 1.0, 1.0)
-        align.add(about_button)
-        first_box.pack_start(align, True, False)
+        button_box = gtk.VBox()
 
-        self.param_hbox.pack_start(first_box, True, True)
+        button = gtk.Button(stock=gtk.STOCK_ABOUT)
+        button.connect("clicked", self.on_about)
+        button_box.pack_start(button)
+
+        button = gtk.Button(stock=gtk.STOCK_CLOSE)
+        button.connect("clicked", self.on_window_closed)
+        button_box.pack_start(button)
+
+        align = gtk.Alignment(0.5, 1.0, 1.0, 0.0)
+        align.add(button_box)
+        misc_box.pack_start(align, True, True)
 
         band_parameters = [
             {'name': 'Active', 'type': 'toggle'},
@@ -979,6 +985,8 @@ class filter_ui(dssi_ui):
             band_frame.add(band_box)
 
             self.param_hbox.pack_start(band_frame, True, True)
+
+        self.param_hbox.pack_start(misc_box, True, True)
 
         self.initator = True
 
