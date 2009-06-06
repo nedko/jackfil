@@ -790,17 +790,16 @@ class dssi_ui:
         self.fake = len(argv) == 1
 
         if self.fake:
-            self.plugin_uri = self.label = self.human_id = "fake"
+            self.plugin_uri = self.human_id = "fake"
+            self.bundle_path = "."
             self.shown = False
             return
 
         print repr(argv)
         self.host_osc_url = argv[1]
         self.plugin_uri = argv[2]
-        self.label = argv[3]
+        self.bundle_path = argv[3]
         self.human_id = argv[4]
-        if self.human_id == "":
-            self.human_id = self.label
 
         self.server = liblo.Server()
         self.server.add_method(None, None, self.on_osc)
@@ -869,7 +868,6 @@ class filter_ui(dssi_ui):
         else:
             return
 
-        self.bundle_path = "."
         self.lv2logo = gtk.gdk.pixbuf_new_from_file(self.bundle_path + "/lv2logo.png")
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)

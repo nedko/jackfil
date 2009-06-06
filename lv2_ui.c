@@ -322,7 +322,7 @@ instantiate(
       filename,
       osc_url,
       plugin_uri,
-      plugin_uri,
+      bundle_path,
       ui_host_ptr->plugin_human_id != NULL ? ui_host_ptr->plugin_human_id : "",
       NULL);
     fprintf(stderr, "exec of UI failed: %s", strerror(errno));
