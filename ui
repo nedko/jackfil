@@ -629,7 +629,7 @@ class dssi_ui:
         self.fake = len(argv) == 1
 
         if self.fake:
-            self.label = self.human_id = "fake"
+            self.plugin_uri = self.label = self.human_id = "fake"
             self.shown = False
             return
 
@@ -703,6 +703,8 @@ class filter_ui(dssi_ui):
             self.port_base = 2
         elif self.plugin_uri == "http://nedko.aranaudov.org/soft/filter/1/stereo":
             self.port_base = 4
+        elif self.plugin_uri == "fake":
+            self.port_base = 0
         else:
             return
 
