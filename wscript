@@ -29,5 +29,5 @@ def build(bld):
     filter = bld.create_obj('lv2plugin', type='cc')
     filter.uselib = 'LV2CORE LIBLO'
     filter.target = 'filter'
-    filter.ttl = ['filter.ttl', 'manifest.ttl', 'ui']
+    filter.ttl = ['filter.ttl', 'manifest.ttl', 'ui', 'lv2logo.png']
     filter.source = ['filter.c', 'lv2filter.c', 'lv2plugin.c', 'log.c', 'lv2_ui.c']

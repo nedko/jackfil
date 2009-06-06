@@ -869,6 +869,9 @@ class filter_ui(dssi_ui):
         else:
             return
 
+        self.bundle_path = "."
+        self.lv2logo = gtk.gdk.pixbuf_new_from_file(self.bundle_path + "/lv2logo.png")
+
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         #self.window.set_size_request(600, 400)
         self.window.set_title("%s (4-band parametric filter)" % self.human_id)
@@ -901,6 +904,12 @@ class filter_ui(dssi_ui):
 
         self.ports = []
 
+        first_box = gtk.VBox()
+        first_box.set_spacing(5)
+
+        master_frame = gtk.Frame("Master")
+        master_frame.set_label_align(0.5, 0.5)
+
         master_box = gtk.VBox()
         master_box.set_spacing(5)
 
@@ -912,7 +921,20 @@ class filter_ui(dssi_ui):
         self.ports.append(port)
         self.add_param_box(master_box, self.create_knob_box(port))
 
-        self.param_hbox.pack_start(master_box, True, True)
+        master_frame.add(master_box)
+        first_box.pack_start(master_frame, False, False)
+
+        #logo = gtk.Image()
+        #logo.set_from_pixbuf(self.lv2logo)
+        #first_box.pack_start(logo, True)
+
+        about_button = gtk.Button("About")
+        about_button.connect("clicked", self.on_about)
+        align = gtk.Alignment(1.0, 1.0, 1.0, 1.0)
+        align.add(about_button)
+        first_box.pack_start(align, True, False)
+
+        self.param_hbox.pack_start(first_box, True, True)
 
         band_parameters = [
             {'name': 'Active', 'type': 'toggle'},
@@ -961,6 +983,18 @@ class filter_ui(dssi_ui):
             self.param_hbox.pack_start(band_frame, True, True)
 
         self.initator = True
+
+    def on_about(self, widget):
+        about = gtk.AboutDialog()
+        about.set_transient_for(self.window)
+        about.set_name("4-band parametric filter")
+        #about.set_website(program_data['website'])
+        about.set_authors(["Nedko Arnaudov - LV2 plugin and GUI", 'Fons Adriaensen - DSP code'])
+        about.set_artists(["LV2 logo has been designed by Thorsten Wilms, based on a concept from Peter Shorthose."])
+        about.set_logo(self.lv2logo)
+        about.show()
+        about.run()
+        about.hide()
 
     def create_knob_box(self, port):
         param_box = gtk.VBox()
