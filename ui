@@ -688,7 +688,7 @@ class frequency_response(gtk.DrawingArea):
         cairo_ctx.line_to(self.get_x(20000), y)
 
         if db % 10 == 0:
-            x -= 23
+            x -= 20
             y += 3
             cairo_ctx.move_to(x, y)
             label = "%+d" % db
@@ -699,6 +699,8 @@ class frequency_response(gtk.DrawingArea):
         cairo_ctx.stroke()
 
     def draw(self, cairo_ctx):
+        cairo_ctx.select_font_face("Fixed")
+
         cairo_ctx.set_source_color(self.color_bg)
         cairo_ctx.rectangle(0, 0, self.width, self.height)
         cairo_ctx.fill()
@@ -725,8 +727,8 @@ class frequency_response(gtk.DrawingArea):
                 y += 10
                 if hz == 20000:
                     x -= 15
-                else:
-                    x -= 5
+                elif hz != 20:
+                    x -= 3
                 cairo_ctx.move_to(x, y)
                 cairo_ctx.show_text(label)
             cairo_ctx.stroke()
