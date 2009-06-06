@@ -624,6 +624,9 @@ class Knob(gtk.VBox):
         self.draw(self.context)
         return False
 
+class filter_band:
+    pass
+
 class frequency_response(gtk.DrawingArea):
     def __init__(self):
         gtk.DrawingArea.__init__(self)
@@ -640,7 +643,7 @@ class frequency_response(gtk.DrawingArea):
         self.margin = 10
         self.db_range = 30
 
-        self.points = []
+        self.filters = {}
 
     def on_expose(self, widget, event):
         cairo_ctx = widget.window.cairo_create()
@@ -698,6 +701,9 @@ class frequency_response(gtk.DrawingArea):
 
         cairo_ctx.stroke()
 
+    def invalidate_all(self):
+        self.queue_draw_area(0, 0, int(self.width), int(self.height))
+
     def draw(self, cairo_ctx):
         cairo_ctx.select_font_face("Fixed")
 
@@ -738,6 +744,46 @@ class frequency_response(gtk.DrawingArea):
 
             if db != 0:
                 self.draw_db_grid(cairo_ctx, -db)
+
+        cairo_ctx.set_source_color(self.color_value)
+        for label, filter in self.filters.items():
+            if not filter.enabled:
+                continue
+
+            x = self.get_x(filter.adj_hz.value)
+            y = self.get_y(filter.adj_db.value)
+            cairo_ctx.move_to(x, y)
+            cairo_ctx.show_text(label)
+            cairo_ctx.stroke()
+
+    def add_filter(self, label, adj_hz, adj_db, adj_bw):
+        #print "filter %s added (%.2f Hz, %.2f dB, %.2f bw)" % (label, adj_hz.value, adj_db.value, adj_bw.value)
+        filter = filter_band()
+        filter.enabled = False
+        filter.label = label
+        filter.adj_hz = adj_hz
+        filter.adj_db = adj_db
+        filter.adj_bw = adj_bw
+        adj_hz.connect("value-changed", self.on_value_change_request)
+        adj_db.connect("value-changed", self.on_value_change_request)
+        adj_bw.connect("value-changed", self.on_value_change_request)
+        self.filters[label] = filter
+
+    def enable_filter(self, label):
+        filter = self.filters[label]
+        #print "filter %s enabled (%.2f Hz, %.2f dB, %.2f bw)" % (label, filter.adj_hz.value, filter.adj_db.value, filter.adj_bw.value)
+        filter.enabled = True
+        self.invalidate_all()
+
+    def disable_filter(self, label):
+        filter = self.filters[label]
+        #print "filter %s disabled (%.2f Hz, %.2f dB, %.2f bw)" % (label, filter.adj_hz.value, filter.adj_db.value, filter.adj_bw.value)
+        filter.enabled = False
+        self.invalidate_all()
+
+    def on_value_change_request(self, adj):
+        #print "adj changed"
+        self.invalidate_all()
 
 class dssi_ui:
     def __init__(self, argv):
@@ -904,6 +950,12 @@ class filter_ui(dssi_ui):
                 elif port['type'] == 'toggle':
                     self.add_param_box(band_box, self.create_toggle_box(port))
 
+            self.fr.add_filter(
+                str(i + 1),
+                self.ports[port_index - 3]['adj'], # frequency
+                self.ports[port_index - 1]['adj'], # gain
+                self.ports[port_index - 2]['adj']) # bandwidth
+
             band_frame.add(band_box)
 
             self.param_hbox.pack_start(band_frame, True, True)
@@ -975,11 +1027,17 @@ class filter_ui(dssi_ui):
 
     def on_button_toggled(self, widget):
         if self.initator:
+            port_index = widget.port['index']
+            band_no = (port_index - 2) / 4 + 1
             if widget.get_active():
                 value = 1.0
+                if band_no > 0:
+                    self.fr.enable_filter(str(band_no))
             else:
                 value = 0.0
-            self.send_port_value(widget.port['index'] + self.port_base, value)
+                if band_no > 0:
+                    self.fr.disable_filter(str(band_no))
+            self.send_port_value(port_index + self.port_base, value)
 
     def run(self):
         self.window.connect("destroy", self.on_window_closed)
