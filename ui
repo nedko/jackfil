@@ -624,6 +624,120 @@ class Knob(gtk.VBox):
         self.draw(self.context)
         return False
 
+class frequency_response(gtk.DrawingArea):
+    def __init__(self):
+        gtk.DrawingArea.__init__(self)
+
+        self.connect("expose-event", self.on_expose)
+        self.connect("size-request", self.on_size_request)
+        self.connect("size_allocate", self.on_size_allocate)
+
+        self.color_bg = gtk.gdk.Color(0,0,0)
+        self.color_value = gtk.gdk.Color(int(65535 * 0.8), int(65535 * 0.7), 0)
+        self.color_mark = gtk.gdk.Color(int(65535 * 0.3), int(65535 * 0.3), int(65535 * 0.3))
+        self.width = 0
+        self.height = 0
+        self.margin = 10
+        self.db_range = 30
+
+        self.points = []
+
+    def on_expose(self, widget, event):
+        cairo_ctx = widget.window.cairo_create()
+
+        # set a clip region for the expose event
+        cairo_ctx.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
+        cairo_ctx.clip()
+
+        self.draw(cairo_ctx)
+
+        return False
+
+    def on_size_allocate(self, widget, allocation):
+        #print allocation.x, allocation.y, allocation.width, allocation.height
+        self.width = float(allocation.width)
+        self.height = float(allocation.height)
+        self.font_size = 10
+
+    def on_size_request(self, widget, requisition):
+        #print "size-request, %u x %u" % (requisition.width, requisition.height)
+        requisition.width = 150
+        requisition.height = 150
+        return
+
+    def invalidate_all(self):
+        self.queue_draw_area(0, 0, int(self.width), int(self.height))
+
+    def get_x(self, hz):
+        width = self.width - 3.5 * self.margin
+        #x = self.margin + width * (hz - 20) / (20000 - 20)
+        x = 2.5 * self.margin + width * log(hz / 20.0, 1000.0)
+        #print x
+        return x
+
+    def get_y(self, db):
+        height = self.height - 2.5 * self.margin
+        y = self.margin + height * (self.db_range - db) / (self.db_range * 2)
+        #print y
+        return y
+
+    def draw_db_grid(self, cairo_ctx, db):
+        x = self.get_x(20)
+        y = self.get_y(db)
+        cairo_ctx.move_to(x, y)
+        cairo_ctx.line_to(self.get_x(20000), y)
+
+        if db % 10 == 0:
+            x -= 23
+            y += 3
+            cairo_ctx.move_to(x, y)
+            label = "%+d" % db
+            if db == 0:
+                label = " " + label
+            cairo_ctx.show_text(label)
+
+        cairo_ctx.stroke()
+
+    def draw(self, cairo_ctx):
+        cairo_ctx.set_source_color(self.color_bg)
+        cairo_ctx.rectangle(0, 0, self.width, self.height)
+        cairo_ctx.fill()
+
+        cairo_ctx.set_source_color(self.color_mark)
+        cairo_ctx.set_line_width(1);
+
+        #for hz in 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000:
+        for hz in range(20, 101, 10) + range(100, 1001, 100) + range(1000, 10001, 1000) + range(10000, 20001, 10000):
+            if hz >= 10000:
+                label = "%dk" % int(hz / 1000)
+            elif hz >= 1000:
+                label = "%dk" % int(hz / 1000)
+            else:
+                label = "%d" % int(hz)
+            first_digit = int(label[0])
+            if first_digit > 5 or (first_digit > 3 and (len(label) == 3)):
+                label = None
+
+            x = self.get_x(hz)
+            cairo_ctx.move_to(x, self.get_y(self.db_range))
+            y = self.get_y(-self.db_range)
+            cairo_ctx.line_to(x, y)
+            if label:
+                y += 10
+                if hz == 20000:
+                    x -= 15
+                else:
+                    x -= 5
+                cairo_ctx.move_to(x, y)
+                cairo_ctx.show_text(label)
+            cairo_ctx.stroke()
+
+        for db in range(0, self.db_range + 1, 5):
+            self.draw_db_grid(cairo_ctx, db)
+
+            if db != 0:
+                self.draw_db_grid(cairo_ctx, -db)
+
 class dssi_ui:
     def __init__(self, argv):
         self.fake = len(argv) == 1
@@ -714,12 +828,22 @@ class filter_ui(dssi_ui):
         self.window.set_role("plugin_ui")
 
         self.top_vbox = gtk.VBox()
+        self.top_vbox.set_spacing(10)
 
         align = gtk.Alignment(0.5, 0.5, 1.0, 1.0)
-        align.set_padding(4, 10, 10, 10)
+        align.set_padding(10, 10, 10, 10)
         align.add(self.top_vbox)
 
         self.window.add(align)
+
+        self.fr = frequency_response()
+        self.fr.set_size_request(400, 200)
+
+        frame = gtk.Frame()
+        frame.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
+        frame.add(self.fr)
+
+        self.top_vbox.pack_start(frame, True, True)
 
         self.param_hbox = gtk.HBox()
         self.top_vbox.pack_start(self.param_hbox)
