@@ -33,16 +33,28 @@
 
 #define BANDS_COUNT 4
 
-#define LV2_PORT_AUDIO_IN    0
-#define LV2_PORT_AUDIO_OUT   1
-#define LV2_PORTS_COUNT      (2 + GLOBAL_PARAMETERS_COUNT + BANDS_COUNT * BAND_PARAMETERS_COUNT)
+#define LV2_PORT_MONO_AUDIO_IN       0
+#define LV2_PORT_MONO_AUDIO_OUT      1
+#define LV2_MONO_AUDIO_PORT_COUNT    2
+#define LV2_PORTS_COUNT_MONO         (LV2_MONO_AUDIO_PORT_COUNT + GLOBAL_PARAMETERS_COUNT + BANDS_COUNT * BAND_PARAMETERS_COUNT)
+
+#define LV2_PORT_LEFT_AUDIO_IN       0
+#define LV2_PORT_RIGHT_AUDIO_IN      1
+#define LV2_PORT_LEFT_AUDIO_OUT      2
+#define LV2_PORT_RIGHT_AUDIO_OUT     3
+#define LV2_STEREO_AUDIO_PORT_COUNT  4
+#define LV2_PORTS_COUNT_STEREO       (LV2_STEREO_AUDIO_PORT_COUNT + GLOBAL_PARAMETERS_COUNT + BANDS_COUNT * BAND_PARAMETERS_COUNT)
 
 struct lv2filter
 {
+  bool stereo;
   filter_handle filter;
+  filter_handle filter_right;
   char * bundle_path;
   const float * audio_in;
+  const float * audio_in_right;
   float * audio_out;
+  float * audio_out_right;
   const LV2_Feature * const * host_features;
 };
 
@@ -57,6 +69,7 @@ lv2filter_instantiate(
   const LV2_Feature * const * feature_ptr_ptr;
 
   LOG_DEBUG("lv2filter_create_plugin_instance() called.");
+  LOG_DEBUG("uri = \"%s\"", descriptor->URI);
   LOG_DEBUG("sample_rate = %f", sample_rate);
   LOG_DEBUG("bundle_path = \"%s\"", bundle_path);
 
@@ -73,7 +86,21 @@ lv2filter_instantiate(
   {
     goto fail;
   }
-  
+
+  if (strcmp(descriptor->URI, LV2FILTER_STEREO_URI) == 0)
+  {
+    lv2filter_ptr->stereo = true;
+  }
+  else if (strcmp(descriptor->URI, LV2FILTER_MONO_URI) == 0)
+  {
+    lv2filter_ptr->stereo = false;
+  }
+  else
+  {
+    assert(false);
+    goto fail_free_instance;
+  }
+
   lv2filter_ptr->host_features = host_features;
 
   lv2filter_ptr->bundle_path = strdup(bundle_path);
@@ -87,7 +114,18 @@ lv2filter_instantiate(
     goto fail_free_bundle_path;
   }
 
+  if (lv2filter_ptr->stereo)
+  {
+    if (!filter_create(sample_rate, BANDS_COUNT, &lv2filter_ptr->filter_right))
+    {
+      goto fail_destroy_filter;
+    }
+  }
+
   return (LV2_Handle)lv2filter_ptr;
+
+fail_destroy_filter:
+  filter_destroy(lv2filter_ptr->filter);
 
 fail_free_bundle_path:
   free(lv2filter_ptr->bundle_path);
@@ -111,10 +149,19 @@ lv2filter_run(
 {
   LOG_DEBUG("lv2filter_run");
   filter_run(
-    lv2filter_ptr->filter, 
+    lv2filter_ptr->filter,
     lv2filter_ptr->audio_in,
     lv2filter_ptr->audio_out,
     samples_count);
+
+  if (lv2filter_ptr->stereo)
+  {
+    filter_run(
+      lv2filter_ptr->filter_right,
+      lv2filter_ptr->audio_in_right,
+      lv2filter_ptr->audio_out_right,
+      samples_count);
+  }
 }
 
 void
@@ -122,6 +169,12 @@ lv2filter_cleanup(
   LV2_Handle instance)
 {
   filter_destroy(lv2filter_ptr->filter);
+
+  if (lv2filter_ptr->stereo)
+  {
+    filter_destroy(lv2filter_ptr->filter_right);
+  }
+
   free(lv2filter_ptr->bundle_path);
   free(lv2filter_ptr);
 }
@@ -134,32 +187,78 @@ lv2filter_connect_port(
 {
   LOG_DEBUG("lv2filter_connect_port %u %p", (unsigned int)port, data_location);
 
-  if (port >= LV2_PORTS_COUNT)
+  if (lv2filter_ptr->stereo)
   {
-    assert(0);
-    return;
-  }
-
-  if (port == LV2_PORT_AUDIO_IN)
-  {
-    lv2filter_ptr->audio_in = data_location;
-  }
-  else if (port == LV2_PORT_AUDIO_OUT)
-  {
-    lv2filter_ptr->audio_out = data_location;
-  }
-  else
-  {
-    port -= 2;
-    if (port < GLOBAL_PARAMETERS_COUNT)
+    if (port >= LV2_PORTS_COUNT_STEREO)
     {
-      filter_connect_global_parameter(lv2filter_ptr->filter, port, data_location);
+      assert(0);
+      return;
+    }
+
+    if (port == LV2_PORT_LEFT_AUDIO_IN)
+    {
+      lv2filter_ptr->audio_in = data_location;
+    }
+    else if (port == LV2_PORT_LEFT_AUDIO_OUT)
+    {
+      lv2filter_ptr->audio_out = data_location;
+    }
+    else if (port == LV2_PORT_RIGHT_AUDIO_IN)
+    {
+      lv2filter_ptr->audio_in_right = data_location;
+    }
+    else if (port == LV2_PORT_RIGHT_AUDIO_OUT)
+    {
+      lv2filter_ptr->audio_out_right = data_location;
     }
     else
     {
-      port -= GLOBAL_PARAMETERS_COUNT;
+      assert(port >= LV2_STEREO_AUDIO_PORT_COUNT);
+      port -= LV2_STEREO_AUDIO_PORT_COUNT;
+      if (port < GLOBAL_PARAMETERS_COUNT)
+      {
+        filter_connect_global_parameter(lv2filter_ptr->filter, port, data_location);
+        filter_connect_global_parameter(lv2filter_ptr->filter_right, port, data_location);
+      }
+      else
+      {
+        assert(port >= GLOBAL_PARAMETERS_COUNT);
+        port -= GLOBAL_PARAMETERS_COUNT;
 
-      filter_connect_band_parameter(lv2filter_ptr->filter, port / BANDS_COUNT, port % BANDS_COUNT, data_location);
+        filter_connect_band_parameter(lv2filter_ptr->filter, port / BANDS_COUNT, port % BANDS_COUNT, data_location);
+        filter_connect_band_parameter(lv2filter_ptr->filter_right, port / BANDS_COUNT, port % BANDS_COUNT, data_location);
+      }
+    }
+  }
+  else
+  {
+    if (port >= LV2_PORTS_COUNT_MONO)
+    {
+      assert(0);
+      return;
+    }
+
+    if (port == LV2_PORT_MONO_AUDIO_IN)
+    {
+      lv2filter_ptr->audio_in = data_location;
+    }
+    else if (port == LV2_PORT_MONO_AUDIO_OUT)
+    {
+      lv2filter_ptr->audio_out = data_location;
+    }
+    else
+    {
+      port -= LV2_MONO_AUDIO_PORT_COUNT;
+      if (port < GLOBAL_PARAMETERS_COUNT)
+      {
+        filter_connect_global_parameter(lv2filter_ptr->filter, port, data_location);
+      }
+      else
+      {
+        port -= GLOBAL_PARAMETERS_COUNT;
+
+        filter_connect_band_parameter(lv2filter_ptr->filter, port / BANDS_COUNT, port % BANDS_COUNT, data_location);
+      }
     }
   }
 }

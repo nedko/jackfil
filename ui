@@ -699,6 +699,13 @@ class filter_ui(dssi_ui):
     def __init__(self, argv):
         dssi_ui.__init__(self, argv)
 
+        if self.plugin_uri == "http://nedko.aranaudov.org/soft/filter/1/mono":
+            self.port_base = 2
+        elif self.plugin_uri == "http://nedko.aranaudov.org/soft/filter/1/stereo":
+            self.port_base = 4
+        else:
+            return
+
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         #self.window.set_size_request(600, 400)
         self.window.set_title("%s (4-band parametric filter)" % self.human_id)
@@ -743,8 +750,7 @@ class filter_ui(dssi_ui):
         freq_min = [  20.0,   40.0,   100.0,   200.0]
         freq_max = [2000.0, 4000.0, 10000.0, 20000.0]
 
-        self.port_base = 2
-        port_index = self.port_base
+        port_index = 2
 
         for i in [0, 1, 2, 3]:
             band_frame = gtk.Frame("Band %d" % (i + 1))

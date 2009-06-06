@@ -6,3 +6,9 @@
   a lv2:FilterPlugin;
   lv2:binary <filter.so>;
   rdfs:seeAlso <filter.ttl>.
+
+<http://nedko.aranaudov.org/soft/filter/1/stereo>
+  a lv2:Plugin;
+  a lv2:FilterPlugin;
+  lv2:binary <filter.so>;
+  rdfs:seeAlso <filter.ttl>.
