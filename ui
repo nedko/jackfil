@@ -850,7 +850,7 @@ class filter_ui(dssi_ui):
 
     def run(self):
         self.window.connect("destroy", self.on_window_closed)
-        gobject.idle_add(self.on_idle)
+        gobject.timeout_add(50, self.on_idle)
         gtk.main()
 
     def on_idle(self):
