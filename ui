@@ -706,7 +706,6 @@ class frequency_response(gtk.DrawingArea):
         cairo_ctx.set_source_color(self.color_mark)
         cairo_ctx.set_line_width(1);
 
-        #for hz in 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000:
         for hz in range(20, 101, 10) + range(100, 1001, 100) + range(1000, 10001, 1000) + range(10000, 20001, 10000):
             if hz >= 10000:
                 label = "%dk" % int(hz / 1000)
