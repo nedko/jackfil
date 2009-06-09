@@ -51,9 +51,9 @@ void
 param_sect_init(
   struct param_sect * sect_ptr)
 {
-  sect_ptr->f = 0.25;
-  sect_ptr->b = sect_ptr->g = 1.0;
-  sect_ptr->a = sect_ptr->s1 = sect_ptr->s2 = sect_ptr->z1 = sect_ptr->z2 = 0.0;
+  sect_ptr->f = 0.25f;
+  sect_ptr->b = sect_ptr->g = 1.0f;
+  sect_ptr->a = sect_ptr->s1 = sect_ptr->s2 = sect_ptr->z1 = sect_ptr->z2 = 0.0f;
 }
 
 inline
@@ -78,36 +78,36 @@ param_sect_proc(
 
   if (f != sect_ptr->f)
   {
-    if      (f < 0.5 * sect_ptr->f) f = 0.5 * sect_ptr->f;
-    else if (f > 2.0 * sect_ptr->f) f = 2.0 * sect_ptr->f;
+    if      (f < 0.5f * sect_ptr->f) f = 0.5f * sect_ptr->f;
+    else if (f > 2.0f * sect_ptr->f) f = 2.0f * sect_ptr->f;
     sect_ptr->f = f;
-    sect_ptr->s1 = -cos(2 * M_PI * f);
+    sect_ptr->s1 = -cosf(6.283185f * f);
     d1 = (sect_ptr->s1 - s1) / k;
     u2 = true;
   }
 
   if (g != sect_ptr->g)
   {
-    if      (g < 0.5 * sect_ptr->g) g = 0.5 * sect_ptr->g;
-    else if (g > 2.0 * sect_ptr->g) g = 2.0 * sect_ptr->g;
+    if      (g < 0.5f * sect_ptr->g) g = 0.5f * sect_ptr->g;
+    else if (g > 2.0f * sect_ptr->g) g = 2.0f * sect_ptr->g;
     sect_ptr->g = g;
-    sect_ptr->a = 0.5 * (g - 1.0);
+    sect_ptr->a = 0.5f * (g - 1.0f);
     da = (sect_ptr->a - a) / k;
     u2 = true;
   }
 
   if (b != sect_ptr->b)
   {
-    if      (b < 0.5 * sect_ptr->b) b = 0.5 * sect_ptr->b;
-    else if (b > 2.0 * sect_ptr->b) b = 2.0 * sect_ptr->b;
+    if      (b < 0.5f * sect_ptr->b) b = 0.5f * sect_ptr->b;
+    else if (b > 2.0f * sect_ptr->b) b = 2.0f * sect_ptr->b;
     sect_ptr->b = b;
     u2 = true;
   }
 
   if (u2)
   {
-    b *= 4 * f;
-    sect_ptr->s2 = (1 + sect_ptr->a - b) / (1 + sect_ptr->a + b);
+    b *= 7 * f / sqrtf(g);         
+    sect_ptr->s2 = (1 - b) / (1 + b);
     d2 = (sect_ptr->s2 - s2) / k;
   }
 
@@ -121,7 +121,7 @@ param_sect_proc(
     *sig++ -= a * (sect_ptr->z2 + s2 * y - x);
     y -= s1 * sect_ptr->z1;
     sect_ptr->z2 = sect_ptr->z1 + s1 * y;
-    sect_ptr->z1 = y + 1e-10;
+    sect_ptr->z1 = y + 1e-10f;
   }
 }
 
