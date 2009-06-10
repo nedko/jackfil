@@ -1,13 +1,13 @@
 @prefix lv2:  <http://lv2plug.in/ns/lv2core#>.
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
 
-<http://nedko.aranaudov.org/soft/filter/1/mono>
+<http://nedko.aranaudov.org/soft/filter/2/mono>
   a lv2:Plugin;
   a lv2:FilterPlugin;
   lv2:binary <filter.so>;
   rdfs:seeAlso <filter.ttl>.
 
-<http://nedko.aranaudov.org/soft/filter/1/stereo>
+<http://nedko.aranaudov.org/soft/filter/2/stereo>
   a lv2:Plugin;
   a lv2:FilterPlugin;
   lv2:binary <filter.so>;

@@ -7,11 +7,11 @@
 @prefix epp: <http://lv2plug.in/ns/dev/extportinfo#> .
 @prefix uiext: <http://lv2plug.in/ns/extensions/ui#> .
 
-<http://nedko.aranaudov.org/soft/filter/1/gui>
+<http://nedko.aranaudov.org/soft/filter/2/gui>
     a uiext:external;
     uiext:binary <filter.so>.
 
-<http://nedko.aranaudov.org/soft/filter/1/mono>
+<http://nedko.aranaudov.org/soft/filter/2/mono>
   a lv2:Plugin;
   a lv2:FilterPlugin;
   doap:maintainer [
@@ -22,7 +22,7 @@
   doap:name "4-band parametric filter (Mono)";
   doap:license <http://usefulinc.com/doap/licenses/gpl>;
 
-  uiext:ui <http://nedko.aranaudov.org/soft/filter/1/gui>;
+  uiext:ui <http://nedko.aranaudov.org/soft/filter/2/gui>;
 
   lv2:port [
     a lv2:InputPort, lv2:AudioPort;
@@ -273,7 +273,7 @@
     ue:unit ue:db;
   ].
 
-<http://nedko.aranaudov.org/soft/filter/1/stereo>
+<http://nedko.aranaudov.org/soft/filter/2/stereo>
   a lv2:Plugin;
   a lv2:FilterPlugin;
   doap:maintainer [
@@ -284,7 +284,7 @@
   doap:name "4-band parametric filter (Stereo)";
   doap:license <http://usefulinc.com/doap/licenses/gpl>;
 
-  uiext:ui <http://nedko.aranaudov.org/soft/filter/1/gui>;
+  uiext:ui <http://nedko.aranaudov.org/soft/filter/2/gui>;
 
   lv2:port [
     a lv2:InputPort, lv2:AudioPort;

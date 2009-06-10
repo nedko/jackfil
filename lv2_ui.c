@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 #define UI_EXECUTABLE "ui"
-#define UI_URI        "http://nedko.aranaudov.org/soft/filter/1/gui"
+#define UI_URI        "http://nedko.aranaudov.org/soft/filter/2/gui"
 
 #include <stdbool.h>
 #include <stdio.h>

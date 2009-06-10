@@ -953,9 +953,9 @@ class filter_ui(dssi_ui):
     def __init__(self, argv):
         dssi_ui.__init__(self, argv)
 
-        if self.plugin_uri == "http://nedko.aranaudov.org/soft/filter/1/mono":
+        if self.plugin_uri == "http://nedko.aranaudov.org/soft/filter/2/mono":
             self.port_base = 2
-        elif self.plugin_uri == "http://nedko.aranaudov.org/soft/filter/1/stereo":
+        elif self.plugin_uri == "http://nedko.aranaudov.org/soft/filter/2/stereo":
             self.port_base = 4
         elif self.plugin_uri == "fake":
             self.port_base = 0

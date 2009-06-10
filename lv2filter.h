@@ -21,8 +21,8 @@
 #ifndef LV2FILTER_H__6EC1E456_7DD7_4536_B8D3_F23BE4583A23__INCLUDED
 #define LV2FILTER_H__6EC1E456_7DD7_4536_B8D3_F23BE4583A23__INCLUDED
 
-#define LV2FILTER_MONO_URI   "http://nedko.aranaudov.org/soft/filter/1/mono"
-#define LV2FILTER_STEREO_URI "http://nedko.aranaudov.org/soft/filter/1/stereo"
+#define LV2FILTER_MONO_URI   "http://nedko.aranaudov.org/soft/filter/2/mono"
+#define LV2FILTER_STEREO_URI "http://nedko.aranaudov.org/soft/filter/2/stereo"
 
 LV2_Handle
 lv2filter_instantiate(
