@@ -22,7 +22,7 @@
 #include <lv2.h>
 
 #include "lv2filter.h"
-#define LOG_LEVEL LOG_LEVEL_DEBUG
+//#define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "log.h"
 
 static LV2_Descriptor g_lv2_plugins[] =

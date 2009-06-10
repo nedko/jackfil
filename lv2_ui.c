@@ -96,7 +96,7 @@ osc_exiting_handler(
   struct control * control_ptr,
   lo_arg ** argv)
 {
-  printf("OSC: got UI exit notification\n");
+  //printf("OSC: got UI exit notification\n");
 
   control_ptr->running = false;
   control_ptr->visible = false;
@@ -119,7 +119,7 @@ osc_control_handler(
   int port = argv[0]->i;
   float value = argv[1]->f;
 
-  printf("OSC control handler: port %d = %f\n", port, value);
+  //printf("OSC control handler: port %d = %f\n", port, value);
 
   control_ptr->write_function(control_ptr->controller, (uint32_t)port, sizeof(float), 0, &value);
 
@@ -136,7 +136,7 @@ osc_update_handler(
   char * host;
   char * port;
 
-  printf("OSC: got update request from <%s>\n", url);
+  //printf("OSC: got update request from <%s>\n", url);
 
   if (control_ptr->osc_address)
   {

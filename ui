@@ -889,7 +889,7 @@ class dssi_ui:
             self.shown = False
             return
 
-        print repr(argv)
+        #print repr(argv)
         self.host_osc_url = argv[1]
         self.plugin_uri = argv[2]
         self.bundle_path = argv[3]
@@ -1233,7 +1233,7 @@ class filter_ui(dssi_ui):
 
 def main():
     filter_ui(sys.argv).run()
-    print "main done"
+    #print "main done"
 
 if __name__ == '__main__':
     main()
