@@ -1131,6 +1131,7 @@ class filter_ui(dssi_ui):
         param_box = gtk.VBox()
         button = gtk.CheckButton(port['name'])
         button.port = port
+        port['widget'] = button
 
         button.connect("toggled", self.on_button_toggled)
 
@@ -1170,21 +1171,22 @@ class filter_ui(dssi_ui):
             self.send_port_value(adj.port['index'] + self.port_base, value)
 
     def on_button_toggled(self, widget):
-        if self.initator:
-            port_index = widget.port['index']
-            band_no = (port_index - 2) / 4 + 1
-            if widget.get_active():
-                value = 1.0
-                if band_no > 0:
-                    self.fr.enable_filter(str(band_no))
-                else:
-                    self.fr.master_enable()
+        port_index = widget.port['index']
+        band_no = (port_index - 2) / 4 + 1
+        if widget.get_active():
+            value = 1.0
+            if band_no > 0:
+                self.fr.enable_filter(str(band_no))
             else:
-                value = 0.0
-                if band_no > 0:
-                    self.fr.disable_filter(str(band_no))
-                else:
-                    self.fr.master_disable()
+                self.fr.master_enable()
+        else:
+            value = 0.0
+            if band_no > 0:
+                self.fr.disable_filter(str(band_no))
+            else:
+                self.fr.master_disable()
+
+        if self.initator:
             self.send_port_value(port_index + self.port_base, value)
 
     def run(self):
@@ -1200,22 +1202,21 @@ class filter_ui(dssi_ui):
         #print "port %d set to %f" % (port_index, port_value)
         port_index -= self.port_base
         port = self.ports[port_index]
+        #print repr(port)
         port_type = port['type']
         if port_type == 'knob':
-            if port.has_key('adj'):
-                self.initator = False
-                port['adj'].set_value(port_value)
-                self.initator = True
+            self.initator = False
+            port['adj'].set_value(port_value)
+            self.initator = True
         elif port_type == 'toggle':
-            if port.has_key('widget'):
-                if port_value < 0.0:
-                    toggled = False
-                else:
-                    toggled = True
+            if port_value > 0.0:
+                toggled = True
+            else:
+                toggled = False
 
-                self.initator = False
-                port['widget'].set_active(toggled)
-                self.initator = True
+            self.initator = False
+            port['widget'].set_active(toggled)
+            self.initator = True
 
     def on_show(self):
         self.window.show_all()
