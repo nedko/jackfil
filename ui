@@ -1118,7 +1118,7 @@ class filter_ui(dssi_ui):
         align.add(knob)
         param_box.pack_start(align, False)
 
-        adj.label = gtk.Label("xxx")
+        adj.label = gtk.Label(self.get_adj_value_text(adj)[0])
         param_box.pack_start(adj.label, False)
         #spin = gtk.SpinButton(adj, 0.0, 2)
         #param_box.pack_start(spin, False)
@@ -1147,7 +1147,7 @@ class filter_ui(dssi_ui):
 
         container.pack_start(align, True)
 
-    def on_adj_value_changed(self, adj):
+    def get_adj_value_text(self, adj):
         value = adj.get_value()
         if value >= 10000:
             format = "%.0f"
@@ -1160,6 +1160,10 @@ class filter_ui(dssi_ui):
         if unit:
             text += " " + unit
 
+        return value, text
+
+    def on_adj_value_changed(self, adj):
+        value, text = self.get_adj_value_text(adj)
         adj.label.set_text(text)
 
         if adj.port['index'] == 1:
