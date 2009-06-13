@@ -1,0 +1,38 @@
+= Compile-time requirements =
+ * lv2core
+ * liblo
+
+= Run-time requirements = 
+ * pygtk
+ * pycairo
+ * pyliblo
+
+= Configure it =
+
+./waf configure
+
+By default waf will try to autodetect where to install the plugin by
+checking the LV2_PATH environment variable.
+If you don't have LV2_PATH set or if you want to override install
+location, you need to use the --lv2-dir switch. You have to specify
+full normalized path (i.e. /home/usesrname/xxx instead of ~/xxx).
+
+./waf configure --lv2-dir=/usr/lib/lv2
+
+For full list of options, run:
+
+./waf configure --help
+
+= Build it =
+
+./waf
+
+You can use -j option to enable building on more than one CPU:
+
+./waf -j 4
+
+= Install it =
+
+./waf install
+
+You probably want to run later as superuser to install system-wide

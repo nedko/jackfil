@@ -1,0 +1,17 @@
+= Version 2.0 on 2009-06-13 =
+ * Display frequency response curves in the UI
+ * GUI layout improvements
+ * Switch to DSP code to one from FIL-plugins-0.3.0 and change URI to
+   reflect parameter tweaks. The new filter will 'feel' different in
+   particular the interaction between gain and bandwidth. This version
+   is much closer to what you'll find in the best analog (and digital)
+   mixers. But it's still the same filter, only the mapping of
+   parameter values to responses has changed.
+ * Fix restoring of plugin UI state
+
+= Version 1.1 on 2009-06-06 =
+ * Two plugins, stereo and mono
+ * Basic GUI
+
+= Version 1 on 2009-06-03 =
+ * Initial release, GUI-less mono plugin based on FIL-plugins-0.1.0
