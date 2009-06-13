@@ -17,19 +17,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
 import sys
 import gtk
-import gtk.glade
 import gobject
-import re
-import time
-import xml.dom.minidom
 import cairo
 from math import pi, sin, cos, atan2, log, sqrt, hypot, log10
 from colorsys import hls_to_rgb, rgb_to_hls
 import liblo
-import copy
 
 def map_coords_linear(x,y):
     return x,1.0-y
