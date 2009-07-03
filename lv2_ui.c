@@ -32,15 +32,13 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <locale.h>
 #include <errno.h>
-
-#include <lo/lo.h>
 
 #include <lv2.h>
 #include "lv2_ui.h"
 #include "lv2_external_ui.h"
-
-#define MAX_OSC_PATH 1024
 
 struct control
 {
@@ -50,155 +48,42 @@ struct control
   LV2UI_Write_Function write_function;
   void (* ui_closed)(LV2UI_Controller controller);
 
-  lo_server osc_server;
-
   bool running;              /* true if UI launched and 'exiting' not received */
   bool visible;              /* true if 'show' sent */
 
-  lo_address osc_address;    /* non-NULL if 'update' received */
-
-  char osc_control_path[MAX_OSC_PATH];
-  char osc_hide_path[MAX_OSC_PATH];
-  char osc_quit_path[MAX_OSC_PATH];
-  char osc_show_path[MAX_OSC_PATH];
+  int send_pipe;             /* the pipe end that is used for sending messages to UI */
+  int recv_pipe;             /* the pipe end that is used for receiving messages from UI */
 };
 
-#undef control_ptr
-
 static
-int
-osc_debug_handler(
-  const char * path,
-  const char * types,
-  lo_arg ** argv,
-  int argc,
-  void * data,
-  void * user_data)
+char *
+read_line(
+  struct control * control_ptr)
 {
-  int i;
+  ssize_t ret;
+  char ch;
+  char buf[100];
+  char * ptr;
 
-  printf("got unhandled OSC message:\n");
-  printf("path: <%s>\n", path);
-  fflush(stdout);
-  for (i = 0; i < argc; i++)
+  ptr = buf;
+
+loop:
+  ret = read(control_ptr->recv_pipe, &ch, 1);
+  if (ret == 1 && ch != '\n')
   {
-    printf("arg %d '%c' ", i, types[i]);
-    lo_arg_pp(types[i], argv[i]);
-    printf("\n");
+    *ptr++ = ch;
+    goto loop;
   }
-  fflush(stdout);
 
-  return 1;
+  if (ptr != buf)
+  {
+    *ptr = 0;
+    //printf("recv: \"%s\"\n", buf);
+    return strdup(buf);
+  }
+
+  return NULL;
 }
-
-int
-osc_exiting_handler(
-  struct control * control_ptr,
-  lo_arg ** argv)
-{
-  //printf("OSC: got UI exit notification\n");
-
-  control_ptr->running = false;
-  control_ptr->visible = false;
-
-  if (control_ptr->osc_address)
-  {
-    lo_address_free(control_ptr->osc_address);
-  }
-
-  control_ptr->ui_closed(control_ptr->controller);
-
-  return 0;
-}
-
-int
-osc_control_handler(
-  struct control * control_ptr,
-  lo_arg ** argv)
-{
-  int port = argv[0]->i;
-  float value = argv[1]->f;
-
-  //printf("OSC control handler: port %d = %f\n", port, value);
-
-  control_ptr->write_function(control_ptr->controller, (uint32_t)port, sizeof(float), 0, &value);
-
-  return 0;
-}
-
-int
-osc_update_handler(
-  struct control * control_ptr,
-  lo_arg ** argv)
-{
-  const char * url = &argv[0]->s;
-  char * path;
-  char * host;
-  char * port;
-
-  //printf("OSC: got update request from <%s>\n", url);
-
-  if (control_ptr->osc_address)
-  {
-    return 0;
-  }
-
-  host = lo_url_get_hostname(url);
-  port = lo_url_get_port(url);
-  control_ptr->osc_address = lo_address_new(host, port);
-  free(host);
-  free(port);
-
-  path = lo_url_get_path(url);
-
-  sprintf(control_ptr->osc_control_path, "%scontrol", path);
-  sprintf(control_ptr->osc_hide_path, "%shide", path);
-  sprintf(control_ptr->osc_show_path, "%sshow", path);
-  sprintf(control_ptr->osc_quit_path, "%squit", path);
-
-  free(path);
-
-  control_ptr->running = true;
-
-  return 0;
-}
-
-#define control_ptr ((struct control *)user_data)
-
-static
-int
-osc_message_handler(
-  const char * path,
-  const char * types,
-  lo_arg ** argv,
-  int argc,
-  void * data,
-  void * user_data)
-{
-  const char *method;
-
-  method = path;
-  if (method[0] != '/' || method[1] != '/')
-    return osc_debug_handler(path, types, argv, argc, data, user_data);
-  method += 2;
-
-  if (!strcmp(method, "update") && argc == 1 && !strcmp(types, "s"))
-  {
-    return osc_update_handler(control_ptr, argv);
-  }
-  else if (!strcmp(method, "control") && argc == 2 && !strcmp(types, "if"))
-  {
-    return osc_control_handler(control_ptr, argv);
-  }
-  else if (!strcmp(method, "exiting") && argc == 0)
-  {
-    return osc_exiting_handler(control_ptr, argv);
-  }
-
-  return osc_debug_handler(path, types, argv, argc, data, user_data);
-}
-
-#undef control_ptr
 
 #define control_ptr ((struct control *)_this_)
 
@@ -207,8 +92,59 @@ void
 run(
   struct lv2_external_ui * _this_)
 {
+  char * msg;
+  char * port_index_str;
+  char * port_value_str;
+  int port;
+  float value;
+  char * locale;
+
   //printf("run() called\n");
-  while (lo_server_recv_noblock(control_ptr->osc_server, 0) != 0) {}
+
+  msg = read_line(control_ptr);
+  if (msg == NULL)
+  {
+    return;
+  }
+
+  locale = strdup(setlocale(LC_NUMERIC, NULL));
+  setlocale(LC_NUMERIC, "POSIX");
+
+  if (!strcmp(msg, "port_value"))
+  {
+    port_index_str = read_line(control_ptr);
+    port_value_str = read_line(control_ptr);
+
+    port = atoi(port_index_str);
+    if (sscanf(port_value_str, "%f", &value) == 1)
+    {
+      //printf("port %d = %f\n", port, value);
+      control_ptr->write_function(control_ptr->controller, (uint32_t)port, sizeof(float), 0, &value);
+    }
+    else
+    {
+      fprintf(stderr, "failed to convert \"%s\" to float\n", port_value_str);
+    }
+
+    free(port_index_str);
+    free(port_value_str);
+  }
+  else if (!strcmp(msg, "exiting"))
+  {
+    //printf("got UI exit notification\n");
+    control_ptr->running = false;
+    control_ptr->visible = false;
+    control_ptr->ui_closed(control_ptr->controller);
+  }
+  else
+  {
+    printf("unknown message: \"%s\"\n", msg);
+  }
+
+  setlocale(LC_NUMERIC, locale);
+  free(locale);
+
+  free(msg);
 }
 
 static
@@ -223,11 +159,8 @@ show(
     return;
   }
 
-  if (control_ptr->osc_address)
-  {
-    lo_send(control_ptr->osc_address, control_ptr->osc_show_path, "");
-    control_ptr->visible = true;
-  }
+  write(control_ptr->send_pipe, "show\n", 5);
+  control_ptr->visible = true;
 }
 
 static
@@ -237,12 +170,12 @@ hide(
 {
   //printf("hide() called\n");
 
-  if (!control_ptr->visible || !control_ptr->osc_address)
+  if (!control_ptr->visible)
   {
     return;
   }
 
-  lo_send(control_ptr->osc_address, control_ptr->osc_hide_path, "");
+  write(control_ptr->send_pipe, "hide\n", 5);
   control_ptr->visible = false;
 }
 
@@ -262,7 +195,11 @@ instantiate(
   struct control * control_ptr;
   struct lv2_external_ui_host * ui_host_ptr;
   char * filename;
-  char * osc_url;
+  int pipe1[2]; /* written by host process, read by plugin UI process */
+  int pipe2[2]; /* written by plugin UI process, read by host process */
+  char ui_recv_pipe[100];
+  char ui_send_pipe[100];
+  int oldflags;
 
   //printf("instantiate('%s', '%s') called\n", plugin_uri, bundle_path);
 
@@ -296,6 +233,19 @@ instantiate(
   control_ptr->write_function = write_function;
   control_ptr->ui_closed = ui_host_ptr->ui_closed;
 
+  if (pipe(pipe1) != 0)
+  {
+    fprintf(stderr, "pipe1 creation failed.");
+  }
+
+  if (pipe(pipe2) != 0)
+  {
+    fprintf(stderr, "pipe2 creation failed.");
+  }
+
+  snprintf(ui_recv_pipe, sizeof(ui_recv_pipe), "%d", pipe1[0]); /* [0] means reading end */
+  snprintf(ui_send_pipe, sizeof(ui_send_pipe), "%d", pipe2[1]); /* [1] means writting end */
+
   filename = malloc(strlen(bundle_path) + strlen(UI_EXECUTABLE) + 1);
   if (filename == NULL)
   {
@@ -307,35 +257,41 @@ instantiate(
 
   control_ptr->running = false;
   control_ptr->visible = false;
-  control_ptr->osc_address = NULL;
 
-  control_ptr->osc_server = lo_server_new(NULL, NULL);
-  osc_url = lo_server_get_url(control_ptr->osc_server);
-  //printf("host OSC URL is %s\n", osc_url);
-  lo_server_add_method(control_ptr->osc_server, NULL, NULL, osc_message_handler, control_ptr);
-
-  if (fork() == 0)
+  switch (vfork())
   {
+  case 0:                       /* child process */
+    /* fork duplicated the handles, close pipe ends that are used by parent process */
+    /* it looks we cant do this for vfork() */
+    //close(pipe1[1]);
+    //close(pipe2[0]);
+
     execlp(
       "python",
       "python",
       filename,
-      osc_url,
       plugin_uri,
       bundle_path,
       ui_host_ptr->plugin_human_id != NULL ? ui_host_ptr->plugin_human_id : "",
+      ui_recv_pipe,             /* reading end */
+      ui_send_pipe,             /* writting end */
       NULL);
     fprintf(stderr, "exec of UI failed: %s", strerror(errno));
     exit(1);
+  case -1:
+    fprintf(stderr, "fork() failed to create new process for plugin UI");
+    goto fail_free_control;
   }
 
-  while (!control_ptr->running)
-  {
-    if (lo_server_recv_noblock(control_ptr->osc_server, 0) == 0)
-    {
-      usleep(300000);
-    }
-  }
+  /* fork duplicated the handles, close pipe ends that are used by the child process */
+  close(pipe1[0]);
+  close(pipe2[1]);
+
+  control_ptr->send_pipe = pipe1[1]; /* [1] means writting end */
+  control_ptr->recv_pipe = pipe2[0]; /* [0] means reading end */
+
+  oldflags = fcntl(control_ptr->recv_pipe, F_GETFL);
+  fcntl(control_ptr->recv_pipe, F_SETFL, oldflags | O_NONBLOCK);
 
   *widget = (LV2UI_Widget)control_ptr;
 
@@ -368,9 +324,24 @@ port_event(
   uint32_t format,
   const void * buffer)
 {
+  char buf[100];
+  int len;
+  char * locale;
+
   //printf("port_event(%u, %f) called\n", (unsigned int)port_index, *(float *)buffer);
 
-  lo_send(control_ptr->osc_address, control_ptr->osc_control_path, "if", (int)port_index, *(float *)buffer);
+  locale = strdup(setlocale(LC_NUMERIC, NULL));
+  setlocale(LC_NUMERIC, "POSIX");
+
+  write(control_ptr->send_pipe, "port_value\n", 11);
+  len = sprintf(buf, "%u\n", (unsigned int)port_index);
+  write(control_ptr->send_pipe, buf, len);
+  len = sprintf(buf, "%.10f\n", *(float *)buffer);
+  write(control_ptr->send_pipe, buf, len);
+  fsync(control_ptr->send_pipe);
+
+  setlocale(LC_NUMERIC, locale);
+  free(locale);
 }
 
 #undef control_ptr

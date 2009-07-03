@@ -18,12 +18,13 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import sys
+import os
+import fcntl
 import gtk
 import gobject
 import cairo
 from math import pi, sin, cos, atan2, log, sqrt, hypot, log10
 from colorsys import hls_to_rgb, rgb_to_hls
-import liblo
 
 def map_coords_linear(x,y):
     return x,1.0-y
@@ -873,7 +874,7 @@ class frequency_response(gtk.DrawingArea):
         self.master_gain = gain;
         self.invalidate_all()
 
-class dssi_ui:
+class filter_ui:
     def __init__(self, argv):
         self.fake = len(argv) == 1
 
@@ -884,68 +885,18 @@ class dssi_ui:
             return
 
         #print repr(argv)
-        self.host_osc_url = argv[1]
-        self.plugin_uri = argv[2]
-        self.bundle_path = argv[3]
-        self.human_id = argv[4]
+        self.plugin_uri = argv[1]
+        self.bundle_path = argv[2]
+        self.human_id = argv[3]
 
-        self.server = liblo.Server()
-        self.server.add_method(None, None, self.on_osc)
-        self.send_update()
+        self.recv_pipe_fd = int(argv[4])
+        self.send_pipe_fd = int(argv[5])
 
-    def send_update(self):
-        if self.fake:
-            return
-        #print "UI -> update -> host"
-        liblo.send(self.host_osc_url, "//update", self.server.get_url())
+        oldflags = fcntl.fcntl(self.recv_pipe_fd, fcntl.F_GETFL)
+        fcntl.fcntl(self.recv_pipe_fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 
-    def send_port_value(self, port_index, value):
-        if self.fake:
-            return
-        liblo.send(self.host_osc_url, "//control", int(port_index), float(value))
-
-    def send_exiting(self):
-        if self.fake:
-            return
-        liblo.send(self.host_osc_url, "//exiting")
-
-    def run(self):
-        if self.fake:
-            if not self.shown:
-                self.shown = True
-                self.on_show()
-            return
-
-        while self.server.recv(0):
-            pass
-
-    def on_osc(self, path, args, types):
-        if path == "/control" and types == "if":
-            self.on_port_value_changed(args[0], args[1])
-        elif path == "/show" and types == "":
-            self.on_show()
-        elif path == "/hide" and types == "":
-            self.on_hide()
-        elif path == "/quit" and types == "":
-            self.on_quit()
-        else:
-            print "Unhandled OSC message. path='%s' types='%s', args=%s" % (path, types, repr(args))
-
-    def on_port_value_changed(self, port_index, port_value):
-        return
-
-    def on_show(self):
-        return
-
-    def on_hide(self):
-        return
-
-    def on_quit(self):
-        return
-
-class filter_ui(dssi_ui):
-    def __init__(self, argv):
-        dssi_ui.__init__(self, argv)
+        self.recv_pipe = os.fdopen(self.recv_pipe_fd, 'r')
+        self.send_pipe = os.fdopen(self.send_pipe_fd, 'w')
 
         if self.plugin_uri == "http://nedko.aranaudov.org/soft/filter/2/mono":
             self.port_base = 2
@@ -1187,14 +1138,66 @@ class filter_ui(dssi_ui):
         if self.initator:
             self.send_port_value(port_index + self.port_base, value)
 
+    def send(self, lines):
+        for line in lines:
+            #print 'send: "' + line + '"'
+            self.send_pipe.write(line + "\n")
+            self.send_pipe.flush()
+
+    def send_exiting(self):
+        self.send(["exiting"])
+
+    def send_port_value(self, port_index, value):
+        self.send(["port_value", str(port_index), "%.10f" % value])
+
+    def recv_line(self):
+        return self.recv_pipe.readline().strip()
+
+    def recv_command(self):
+        try:
+            msg = self.recv_line()
+
+            if msg == "port_value":
+                port_index = int(self.recv_line())
+                port_value = float(self.recv_line())
+                #print "port_value_change recevied: %d %f" % (port_index, port_value)
+                self.on_port_value_changed(port_index, port_value)
+            elif msg == "show":
+                self.on_show()
+            elif msg == "hide":
+                self.on_hide()
+            elif msg == "quit":
+                self.on_quit()
+            else:
+                print 'unknown message: "' + msg + '"'
+
+            return True
+        except IOError:
+            return False
+
+    def on_recv(self, fd, cond):
+        #print "on_recv"
+        if cond == gobject.IO_HUP:
+            gtk.main_quit()
+            return False
+
+        while True:
+            if not self.recv_command():
+                break
+
+        return True
+
     def run(self):
         self.window.connect("destroy", self.on_window_closed)
-        gobject.timeout_add(50, self.on_idle)
-        gtk.main()
 
-    def on_idle(self):
-        dssi_ui.run(self)
-        return True
+        if self.fake:
+            if not self.shown:
+                self.shown = True
+                self.on_show()
+        else:
+            gobject.io_add_watch(self.recv_pipe_fd, gobject.IO_IN | gobject.IO_HUP, self.on_recv)
+
+        gtk.main()
 
     def on_port_value_changed(self, port_index, port_value):
         #print "port %d set to %f" % (port_index, port_value)
