@@ -375,6 +375,8 @@ instantiate(
 
   FORK_TIME_MEASURE_END(FORK_STR "() time");
 
+  //fprintf(stderr, FORK_STR "()-ed child process: %d\n", ret);
+
   /* fork duplicated the handles, close pipe ends that are used by the child process */
   close(pipe1[0]);
   close(pipe2[1]);
