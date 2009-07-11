@@ -1,11 +1,9 @@
 = Compile-time requirements =
  * lv2core
- * liblo
 
 = Run-time requirements = 
  * pygtk
  * pycairo
- * pyliblo
 
 = Configure it =
 
