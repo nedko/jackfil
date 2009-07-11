@@ -882,21 +882,20 @@ class filter_ui:
             self.plugin_uri = self.human_id = "fake"
             self.bundle_path = "."
             self.shown = False
-            return
+        else:
+            #print repr(argv)
+            self.plugin_uri = argv[1]
+            self.bundle_path = argv[2]
+            self.human_id = argv[3]
 
-        #print repr(argv)
-        self.plugin_uri = argv[1]
-        self.bundle_path = argv[2]
-        self.human_id = argv[3]
+            self.recv_pipe_fd = int(argv[4])
+            self.send_pipe_fd = int(argv[5])
 
-        self.recv_pipe_fd = int(argv[4])
-        self.send_pipe_fd = int(argv[5])
+            oldflags = fcntl.fcntl(self.recv_pipe_fd, fcntl.F_GETFL)
+            fcntl.fcntl(self.recv_pipe_fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 
-        oldflags = fcntl.fcntl(self.recv_pipe_fd, fcntl.F_GETFL)
-        fcntl.fcntl(self.recv_pipe_fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
-
-        self.recv_pipe = os.fdopen(self.recv_pipe_fd, 'r')
-        self.send_pipe = os.fdopen(self.send_pipe_fd, 'w')
+            self.recv_pipe = os.fdopen(self.recv_pipe_fd, 'r')
+            self.send_pipe = os.fdopen(self.send_pipe_fd, 'w')
 
         if self.plugin_uri == "http://nedko.aranaudov.org/soft/filter/2/mono":
             self.port_base = 2
@@ -1139,6 +1138,9 @@ class filter_ui:
             self.send_port_value(port_index + self.port_base, value)
 
     def send(self, lines):
+        if self.fake:
+            return
+
         for line in lines:
             #print 'send: "' + line + '"'
             self.send_pipe.write(line + "\n")
