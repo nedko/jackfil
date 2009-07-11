@@ -49,6 +49,7 @@
 #include <string.h>
 
 #include <sys/types.h>
+#include <sys/wait.h>
 #if defined(FORK_TIME_MEASURE)
 # include <sys/time.h>
 #endif
@@ -77,6 +78,8 @@ struct control
 
   int send_pipe;             /* the pipe end that is used for sending messages to UI */
   int recv_pipe;             /* the pipe end that is used for receiving messages from UI */
+
+  pid_t pid;
 };
 
 static
@@ -155,7 +158,44 @@ run(
   }
   else if (!strcmp(msg, "exiting"))
   {
+    pid_t ret;
+    int i;
+
     //printf("got UI exit notification\n");
+
+    /* wait tree seconds for child to exit, we dont like zombie processes */
+    for (i = 0; i < 30; i++)
+    {
+      //fprintf(stderr, "waitpid(%d): %d\n", (int)control_ptr->pid, i);
+
+      ret = waitpid(control_ptr->pid, NULL, WNOHANG);
+      if (ret != 0)
+      {
+        if (ret == -1)
+        {
+          fprintf(stderr, "waitpid(%d) failed: %s\n", (int)control_ptr->pid, strerror(errno));
+        }
+        else if (ret == control_ptr->pid)
+        {
+          control_ptr->pid = -1;
+        }
+        else
+        {
+          fprintf(stderr, "we have waited for child pid %d to exit but we got pid %d instead\n", (int)control_ptr->pid, (int)ret);
+        }
+
+        break;
+      }
+
+      //fprintf(stderr, "wait 100 ms ...\n");
+      usleep(100000);           /* wait 100 ms */
+    }
+
+    if (control_ptr->pid != -1)
+    {
+      fprintf(stderr, "we have waited for child pid %d to exit for 3 seconds and we are giving up\n", (int)control_ptr->pid);
+    }
+
     control_ptr->running = false;
     control_ptr->visible = false;
     control_ptr->ui_closed(control_ptr->controller);
@@ -326,6 +366,8 @@ instantiate(
   control_ptr->running = false;
   control_ptr->visible = false;
 
+  control_ptr->pid = -1;
+
   argv[0] = "python";
   argv[1] = filename;
   argv[2] = plugin_uri;
@@ -376,6 +418,7 @@ instantiate(
   FORK_TIME_MEASURE_END(FORK_STR "() time");
 
   //fprintf(stderr, FORK_STR "()-ed child process: %d\n", ret);
+  control_ptr->pid = ret;
 
   /* fork duplicated the handles, close pipe ends that are used by the child process */
   close(pipe1[0]);
