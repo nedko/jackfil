@@ -25,6 +25,10 @@
 #define UI_EXECUTABLE "ui"
 #define UI_URI        "http://nedko.aranaudov.org/soft/filter/2/gui"
 
+#define WAIT_START_TIMEOUT  3000 /* ms */
+#define WAIT_ZOMBIE_TIMEOUT 3000 /* ms */
+#define WAIT_STEP 100            /* ms */
+
 //#define FORK_TIME_MEASURE
 
 #define USE_VFORK
@@ -112,6 +116,57 @@ loop:
   return NULL;
 }
 
+static
+bool
+wait_child(
+  pid_t pid)
+{
+  pid_t ret;
+  int i;
+
+  if (pid == -1)
+  {
+    fprintf(stderr, "Can't wait for pid -1\n");
+    return false;
+  }
+
+  for (i = 0; i < WAIT_ZOMBIE_TIMEOUT / WAIT_STEP; i++)
+  {
+    //printf("waitpid(%d): %d\n", (int)pid, i);
+
+    ret = waitpid(pid, NULL, WNOHANG);
+    if (ret != 0)
+    {
+      if (ret == pid)
+      {
+        //printf("child zombie with pid %d was consumed.\n", (int)pid);
+        return true;
+      }
+
+      if (ret == -1)
+      {
+        fprintf(stderr, "waitpid(%d) failed: %s\n", (int)pid, strerror(errno));
+        return false;
+      }
+
+      fprintf(stderr, "we have waited for child pid %d to exit but we got pid %d instead\n", (int)pid, (int)ret);
+
+      return false;
+    }
+
+    //printf("zombie wait %d ms ...\n", WAIT_STEP);
+    usleep(WAIT_STEP * 1000);   /* wait 100 ms */
+  }
+
+  fprintf(
+    stderr,
+    "we have waited for child with pid %d to exit for %.1f seconds and we are giving up\n",
+    (int)pid,
+    (float)((float)WAIT_START_TIMEOUT / 1000));
+
+  return false;
+}
+
 #define control_ptr ((struct control *)_this_)
 
 static
@@ -158,42 +213,20 @@ run(
   }
   else if (!strcmp(msg, "exiting"))
   {
-    pid_t ret;
-    int i;
-
     //printf("got UI exit notification\n");
 
-    /* wait tree seconds for child to exit, we dont like zombie processes */
-    for (i = 0; i < 30; i++)
+    /* for a while wait child to exit, we dont like zombie processes */
+    if (!wait_child(control_ptr->pid))
     {
-      //fprintf(stderr, "waitpid(%d): %d\n", (int)control_ptr->pid, i);
-
-      ret = waitpid(control_ptr->pid, NULL, WNOHANG);
-      if (ret != 0)
+      fprintf(stderr, "force killing misbehaved child %d (exit)\n", (int)control_ptr->pid);
+      if (kill(control_ptr->pid, SIGKILL) == -1)
       {
-        if (ret == -1)
-        {
-          fprintf(stderr, "waitpid(%d) failed: %s\n", (int)control_ptr->pid, strerror(errno));
-        }
-        else if (ret == control_ptr->pid)
-        {
-          control_ptr->pid = -1;
-        }
-        else
-        {
-          fprintf(stderr, "we have waited for child pid %d to exit but we got pid %d instead\n", (int)control_ptr->pid, (int)ret);
-        }
-
-        break;
+        fprintf(stderr, "kill() failed: %s (exit)\n", strerror(errno));
       }
-
-      //fprintf(stderr, "wait 100 ms ...\n");
-      usleep(100000);           /* wait 100 ms */
-    }
-
-    if (control_ptr->pid != -1)
-    {
-      fprintf(stderr, "we have waited for child pid %d to exit for 3 seconds and we are giving up\n", (int)control_ptr->pid);
+      else
+      {
+        wait_child(control_ptr->pid);
+      }
     }
 
     control_ptr->running = false;
@@ -308,6 +341,8 @@ instantiate(
   FORK_TIME_MEASURE_VAR;
   const char * argv[8];
   int ret;
+  int i;
+  char ch;
 
   //printf("instantiate('%s', '%s') called\n", plugin_uri, bundle_path);
 
@@ -430,14 +465,64 @@ instantiate(
   oldflags = fcntl(control_ptr->recv_pipe, F_GETFL);
   fcntl(control_ptr->recv_pipe, F_SETFL, oldflags | O_NONBLOCK);
 
-  *widget = (LV2UI_Widget)control_ptr;
+  /* wait a while for child process to confirm it is alive */
+  //printf("waiting UI start\n");
+  i = 0;
+loop:
+  ret = read(control_ptr->recv_pipe, &ch, 1);
+  switch (ret)
+  {
+  case -1:
+    if (errno == EAGAIN)
+    {
+      if (i < WAIT_START_TIMEOUT / WAIT_STEP)
+      {
+        //printf("start wait %d ms ...\n", WAIT_STEP);
+        usleep(WAIT_STEP * 1000);
+        i++;
+        goto loop;
+      }
 
-  return (LV2UI_Handle)control_ptr;
+      fprintf(
+        stderr,
+        "we have waited for child with pid %d to appear for %.1f seconds and we are giving up\n",
+        (int)control_ptr->pid,
+        (float)((float)WAIT_START_TIMEOUT / 1000));
+    }
+    else
+    {
+      fprintf(stderr, "read() failed: %s\n", strerror(errno));
+    }
+    break;
+  case 1:
+    if (ch == '\n')
+    {
+      *widget = (LV2UI_Widget)control_ptr;
+      return (LV2UI_Handle)control_ptr;
+    }
+
+    fprintf(stderr, "read() wrong first char '%c'\n", ch);
+
+    break;
+  default:
+    fprintf(stderr, "read() returned %d\n", ret);
+  }
+
+  fprintf(stderr, "force killing misbehaved child %d (start)\n", (int)control_ptr->pid);
+
+  if (kill(control_ptr->pid, SIGKILL) == -1)
+  {
+      fprintf(stderr, "kill() failed: %s (start)\n", strerror(errno));
+  }
+
+  /* wait a while child to exit, we dont like zombie processes */
+  wait_child(control_ptr->pid);
 
 fail_free_control:
   free(control_ptr);
 
 fail:
+  fprintf(stderr, "lv2fil UI launch failed\n");
   return NULL;
 }
 
