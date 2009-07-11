@@ -25,12 +25,27 @@
 #define UI_EXECUTABLE "ui"
 #define UI_URI        "http://nedko.aranaudov.org/soft/filter/2/gui"
 
+//#define FORK_TIME_MEASURE
+#define USE_VFORK
+
+#if defined(USE_VFORK)
+#define FORK vfork
+#define FORK_STR "vfork"
+#else
+#define FORK fork
+#define FORK_STR "fork"
+#endif
+
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <sys/types.h>
+#if defined(FORK_TIME_MEASURE)
+# include <sys/time.h>
+#endif
 #include <unistd.h>
 #include <fcntl.h>
 #include <locale.h>
@@ -181,6 +196,37 @@ hide(
 
 #undef control_ptr
 
+#if defined(FORK_TIME_MEASURE)
+static
+uint64_t
+get_current_time()
+{
+   struct timeval time;
+
+   if (gettimeofday(&time, NULL) != 0)
+       return 0;
+
+   return (uint64_t)time.tv_sec * 1000000 + (uint64_t)time.tv_usec;
+}
+
+#define FORK_TIME_MEASURE_VAR_NAME  ____t
+
+#define FORK_TIME_MEASURE_VAR       uint64_t FORK_TIME_MEASURE_VAR_NAME
+#define FORK_TIME_MEASURE_BEGIN     FORK_TIME_MEASURE_VAR_NAME = get_current_time()
+#define FORK_TIME_MEASURE_END(msg)                                                       \
+  {                                                                                      \
+    FORK_TIME_MEASURE_VAR_NAME = get_current_time() - FORK_TIME_MEASURE_VAR_NAME;        \
+    fprintf(stderr, msg ": %llu us\n", (unsigned long long)FORK_TIME_MEASURE_VAR_NAME);  \
+  }
+
+#else
+
+#define FORK_TIME_MEASURE_VAR
+#define FORK_TIME_MEASURE_BEGIN
+#define FORK_TIME_MEASURE_END(msg)
+
+#endif
+
 static
 LV2UI_Handle
 instantiate(
@@ -200,6 +246,7 @@ instantiate(
   char ui_recv_pipe[100];
   char ui_send_pipe[100];
   int oldflags;
+  FORK_TIME_MEASURE_VAR;
 
   //printf("instantiate('%s', '%s') called\n", plugin_uri, bundle_path);
 
@@ -258,13 +305,17 @@ instantiate(
   control_ptr->running = false;
   control_ptr->visible = false;
 
-  switch (vfork())
+  FORK_TIME_MEASURE_BEGIN;
+
+  switch (FORK())
   {
   case 0:                       /* child process */
     /* fork duplicated the handles, close pipe ends that are used by parent process */
+#if !defined(USE_VFORK)
     /* it looks we cant do this for vfork() */
-    //close(pipe1[1]);
-    //close(pipe2[0]);
+    close(pipe1[1]);
+    close(pipe2[0]);
+#endif
 
     execlp(
       "python",
@@ -282,6 +333,8 @@ instantiate(
     fprintf(stderr, "fork() failed to create new process for plugin UI");
     goto fail_free_control;
   }
+
+  FORK_TIME_MEASURE_END(FORK_STR "() time");
 
   /* fork duplicated the handles, close pipe ends that are used by the child process */
   close(pipe1[0]);
