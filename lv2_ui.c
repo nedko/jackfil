@@ -26,16 +26,22 @@
 #define UI_URI        "http://nedko.aranaudov.org/soft/filter/2/gui"
 
 //#define FORK_TIME_MEASURE
+
 #define USE_VFORK
+//#define USE_CLONE
+//#define USE_CLONE2
 
 #if defined(USE_VFORK)
 #define FORK vfork
 #define FORK_STR "vfork"
+#elif defined(USE_CLONE)
+#define FORK_STR "clone"
+#elif defined(USE_CLONE2)
+#define FORK_STR "clone2"
 #else
 #define FORK fork
 #define FORK_STR "fork"
 #endif
-
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -47,6 +53,9 @@
 # include <sys/time.h>
 #endif
 #include <unistd.h>
+#if defined(USE_CLONE) || defined(USE_CLONE2)
+# include <sched.h>
+#endif
 #include <fcntl.h>
 #include <locale.h>
 #include <errno.h>
@@ -227,6 +236,16 @@ get_current_time()
 
 #endif
 
+#if defined(USE_CLONE) || defined(USE_CLONE2)
+
+static int clone_fn(void * context)
+{
+    execvp(*(const char **)context, (char **)context);
+    return -1;
+}
+
+#endif
+
 static
 LV2UI_Handle
 instantiate(
@@ -247,6 +266,8 @@ instantiate(
   char ui_send_pipe[100];
   int oldflags;
   FORK_TIME_MEASURE_VAR;
+  const char * argv[8];
+  int ret;
 
   //printf("instantiate('%s', '%s') called\n", plugin_uri, bundle_path);
 
@@ -305,9 +326,34 @@ instantiate(
   control_ptr->running = false;
   control_ptr->visible = false;
 
+  argv[0] = "python";
+  argv[1] = filename;
+  argv[2] = plugin_uri;
+  argv[3] = bundle_path;
+  argv[4] = ui_host_ptr->plugin_human_id != NULL ? ui_host_ptr->plugin_human_id : "";
+  argv[5] = ui_recv_pipe;       /* reading end */
+  argv[6] = ui_send_pipe;       /* writting end */
+  argv[7] = NULL;
+
   FORK_TIME_MEASURE_BEGIN;
 
-  switch (FORK())
+#if defined(USE_CLONE)
+  {
+    int stack[8000];
+
+    ret = clone(clone_fn, stack + 4000, CLONE_VFORK, argv);
+    if (ret == -1)
+    {
+      fprintf(stderr, "clone() failed: %s\n", strerror(errno));
+      goto fail_free_control;
+    }
+  }
+#elif defined(USE_CLONE2)
+  fprintf(stderr, "clone2() exec not implemented yet\n");
+  goto fail_free_control;
+#else
+  ret = FORK();
+  switch (ret)
   {
   case 0:                       /* child process */
     /* fork duplicated the handles, close pipe ends that are used by parent process */
@@ -317,22 +363,15 @@ instantiate(
     close(pipe2[0]);
 #endif
 
-    execlp(
-      "python",
-      "python",
-      filename,
-      plugin_uri,
-      bundle_path,
-      ui_host_ptr->plugin_human_id != NULL ? ui_host_ptr->plugin_human_id : "",
-      ui_recv_pipe,             /* reading end */
-      ui_send_pipe,             /* writting end */
-      NULL);
+    execvp(argv[0], (char **)argv);
     fprintf(stderr, "exec of UI failed: %s", strerror(errno));
     exit(1);
   case -1:
     fprintf(stderr, "fork() failed to create new process for plugin UI");
     goto fail_free_control;
   }
+
+#endif
 
   FORK_TIME_MEASURE_END(FORK_STR "() time");
 
