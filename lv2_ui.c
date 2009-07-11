@@ -303,12 +303,12 @@ instantiate(
 
   if (pipe(pipe1) != 0)
   {
-    fprintf(stderr, "pipe1 creation failed.");
+    fprintf(stderr, "pipe1 creation failed.\n");
   }
 
   if (pipe(pipe2) != 0)
   {
-    fprintf(stderr, "pipe2 creation failed.");
+    fprintf(stderr, "pipe2 creation failed.\n");
   }
 
   snprintf(ui_recv_pipe, sizeof(ui_recv_pipe), "%d", pipe1[0]); /* [0] means reading end */
@@ -364,10 +364,10 @@ instantiate(
 #endif
 
     execvp(argv[0], (char **)argv);
-    fprintf(stderr, "exec of UI failed: %s", strerror(errno));
+    fprintf(stderr, "exec of UI failed: %s\n", strerror(errno));
     exit(1);
   case -1:
-    fprintf(stderr, "fork() failed to create new process for plugin UI");
+    fprintf(stderr, "fork() failed to create new process for plugin UI\n");
     goto fail_free_control;
   }
 
