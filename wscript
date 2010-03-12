@@ -24,6 +24,8 @@ def configure(conf):
 
     conf.check_pkg('lv2core', mandatory=True)
 
+    conf.env.append_unique('LINKFLAGS', '-lm')
+
 def build(bld):
     filter = bld.create_obj('lv2plugin', type='cc')
     filter.uselib = 'LV2CORE'
