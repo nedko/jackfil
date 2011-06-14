@@ -534,6 +534,7 @@ cleanup(
   LV2UI_Handle ui)
 {
   //printf("cleanup() called\n");
+  hide(&control_ptr->virt);
   free(control_ptr);
 }
 
