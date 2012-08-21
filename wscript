@@ -23,12 +23,13 @@ def configure(conf):
     conf.check_tool('lv2plugin', tooldir='.')
 
     conf.check_pkg('lv2core', mandatory=True)
+    conf.check_pkg('gtk+-2.0', mandatory=True)
 
     conf.env.append_unique('LINKFLAGS', '-lm')
 
 def build(bld):
     filter = bld.create_obj('lv2plugin', type='cc')
-    filter.uselib = 'LV2CORE'
+    filter.uselib = 'LV2CORE GTK+-2.0'
     filter.target = 'filter'
     filter.ttl = ['filter.ttl', 'manifest.ttl', 'ui', 'lv2logo.png']
-    filter.source = ['filter.c', 'lv2filter.c', 'lv2plugin.c', 'log.c', 'lv2_ui.c']
+    filter.source = ['filter.c', 'lv2filter.c', 'lv2plugin.c', 'log.c', 'lv2_ui.c', 'knob.c', 'fr.c']
