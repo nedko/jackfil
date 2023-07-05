@@ -46,7 +46,8 @@ struct param_sect
   float z1, z2;
 };
 
-inline
+//inline
+static
 void
 param_sect_init(
   struct param_sect * sect_ptr)
@@ -56,7 +57,8 @@ param_sect_init(
   sect_ptr->a = sect_ptr->s1 = sect_ptr->s2 = sect_ptr->z1 = sect_ptr->z2 = 0.0f;
 }
 
-inline
+//inline
+static
 void
 param_sect_proc(
   struct param_sect * sect_ptr,
