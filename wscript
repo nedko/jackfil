@@ -22,7 +22,8 @@ def configure(conf):
     conf.check_tool('compiler_cc')
     conf.check_tool('lv2plugin', tooldir='.')
 
-    conf.check_pkg('lv2core', mandatory=True)
+    if not conf.check_pkg('lv2core', mandatory=False):
+        conf.check_pkg('lv2', mandatory=True, destvar='LV2CORE')
 
     conf.env.append_unique('LINKFLAGS', '-lm')
 
