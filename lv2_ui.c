@@ -68,6 +68,7 @@
 #include <lv2.h>
 #include "lv2_ui.h"
 #include "lv2_external_ui.h"
+#include "config.h"
 
 struct control
 {
@@ -403,7 +404,7 @@ instantiate(
 
   control_ptr->pid = -1;
 
-  argv[0] = "python";
+  argv[0] = PYTHON;
   argv[1] = filename;
   argv[2] = plugin_uri;
   argv[3] = bundle_path;
