@@ -31,6 +31,6 @@ The lv2fil GUI is written in python2 via py2gtk2.
 
 The UI does not require OpenGL software stack nor GPU for operation.
 
-See also:
+== See also
 
  * http://x42-plugins.com/x42/x42-eq[x42-eq (aka fil4.lv2), by Robin Gareus]
