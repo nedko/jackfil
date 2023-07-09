@@ -1,9 +1,9 @@
-= Overview =
+== Overview
 Stereo and mono LV2 plugins, four-band parametric equalisers.
 Each section has an active/bypass switch, frequency, bandwidth and
 gain controls. There is also a global bypass switch and gain control.
 
-= DSP =
+== DSP
 The 2nd order resonant filters are implemented using a Mitra-Regalia
 style lattice filter, which has the nice property of being stable
 even while parameters are being changed.
@@ -15,7 +15,7 @@ of plugin control ports, such as Ardour, or for stage use.
 
 The DSP code is written by Fons Adriaensen
 
-= GUI =
+== GUI
 The GUI provides knobs and toggle buttons for tweaking filter
 parameters. It also provides frequency response widget with
 differently coloured curve for each section and separate curve for
