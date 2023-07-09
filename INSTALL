@@ -1,9 +1,11 @@
 = Compile-time requirements =
  * lv2core
+ * python2 (for waf-1.3.3)
 
-= Run-time requirements = 
- * pygtk
- * pycairo
+= Run-time requirements =
+ * python2
+ * py2gtk2
+ * py2cairo
 
 = Configure it =
 
