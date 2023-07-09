@@ -3,6 +3,8 @@ Stereo and mono LV2 plugins, four-band parametric equalisers.
 Each section has an active/bypass switch, frequency, bandwidth and
 gain controls. There is also a global bypass switch and gain control.
 
+image:https://linuxaudio.github.io/libremusicproduction/html/sites/default/files/articles/lv2-plugins-fil-parametric-equalizer.png["lv2fil screenshot", link="https://linuxaudio.github.io/libremusicproduction/html/articles/lv2-plugins-mixing-my-favorite-basic-plugins-zthmusic.html", width="100%"]
+
 == DSP
 The 2nd order resonant filters are implemented using a Mitra-Regalia
 style lattice filter, which has the nice property of being stable
