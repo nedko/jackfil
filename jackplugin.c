@@ -19,7 +19,11 @@
  *****************************************************************************/
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <lv2.h>
+
+#include "lv2_ui.h"
+#include "lv2_external_ui.h"
 
 #include "lv2filter.h"
 //#define LOG_LEVEL LOG_LEVEL_DEBUG
@@ -80,7 +84,6 @@ const LV2_Descriptor* lv2_descriptor(uint32_t index)
   return g_lv2_plugins + index;
 }
 
-
 int
 main(void)
 {
@@ -94,12 +97,37 @@ main(void)
   h = descr_ptr->instantiate(
     descr_ptr,
     /* FIXME: sample_rate */ 48000,
-    /* FIXMEL: bundle path for UI */ "/dev/null",
+    /* FIXMEL: bundle path for UI */ "./",
     NULL);
   if (h == NULL)
   {
     LOG_ERROR("Instantiation failed.");
     return 1;
+  }
+
+  const LV2UI_Descriptor * ui_ptr;
+
+  ui_ptr = lv2ui_descriptor(0);
+
+  LV2UI_Handle ui;
+  LV2UI_Widget widget;
+  ui = ui_ptr->instantiate(
+    ui_ptr,
+    "plugin_uri",
+    /* FIXME: bundle path */ "./",
+    /* FIXME: write_function */ NULL,
+    /* FIXME: controller */ NULL,
+    &widget,
+    /* FIXME: const LV2_Feature* const*       features */ NULL);
+
+  struct lv2_external_ui * eui_ptr = (struct lv2_external_ui *)widget;
+
+  eui_ptr->show(eui_ptr);
+
+  while (1)
+  {
+    eui_ptr->run(eui_ptr);
+    usleep(10 * 1000);
   }
 
   descr_ptr->cleanup(h);

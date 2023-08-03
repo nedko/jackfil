@@ -74,9 +74,9 @@ struct control
 {
   struct lv2_external_ui virt;  /* WARNING: code assumes this is the first struct member */
 
-  LV2UI_Controller controller;
-  LV2UI_Write_Function write_function;
-  void (* ui_closed)(LV2UI_Controller controller);
+  //LV2UI_Controller controller;
+  //LV2UI_Write_Function write_function;
+  //void (* ui_closed)(LV2UI_Controller controller);
 
   bool running;              /* true if UI launched and 'exiting' not received */
   bool visible;              /* true if 'show' sent */
@@ -201,8 +201,8 @@ run(
     port = atoi(port_index_str);
     if (sscanf(port_value_str, "%f", &value) == 1)
     {
-      //printf("port %d = %f\n", port, value);
-      control_ptr->write_function(control_ptr->controller, (uint32_t)port, sizeof(float), 0, &value);
+      printf("port %d = %f\n", port, value);
+      //control_ptr->write_function(control_ptr->controller, (uint32_t)port, sizeof(float), 0, &value);
     }
     else
     {
@@ -232,7 +232,7 @@ run(
 
     control_ptr->running = false;
     control_ptr->visible = false;
-    control_ptr->ui_closed(control_ptr->controller);
+    //control_ptr->ui_closed(control_ptr->controller);
   }
   else
   {
@@ -332,7 +332,7 @@ instantiate(
   const LV2_Feature * const * features)
 {
   struct control * control_ptr;
-  struct lv2_external_ui_host * ui_host_ptr;
+  //struct lv2_external_ui_host * ui_host_ptr;
   char * filename;
   int pipe1[2]; /* written by host process, read by plugin UI process */
   int pipe2[2]; /* written by plugin UI process, read by host process */
@@ -347,6 +347,7 @@ instantiate(
 
   //printf("instantiate('%s', '%s') called\n", plugin_uri, bundle_path);
 
+#if 0
   ui_host_ptr = NULL;
   while (*features != NULL)
   {
@@ -362,6 +363,7 @@ instantiate(
   {
     goto fail;
   }
+#endif
 
   control_ptr = malloc(sizeof(struct control));
   if (control_ptr == NULL)
@@ -373,9 +375,9 @@ instantiate(
   control_ptr->virt.show = show;
   control_ptr->virt.hide = hide;
 
-  control_ptr->controller = controller;
-  control_ptr->write_function = write_function;
-  control_ptr->ui_closed = ui_host_ptr->ui_closed;
+  //control_ptr->controller = controller;
+  //control_ptr->write_function = write_function;
+  //control_ptr->ui_closed = ui_host_ptr->ui_closed;
 
   if (pipe(pipe1) != 0)
   {
@@ -408,7 +410,7 @@ instantiate(
   argv[1] = filename;
   argv[2] = plugin_uri;
   argv[3] = bundle_path;
-  argv[4] = ui_host_ptr->plugin_human_id != NULL ? ui_host_ptr->plugin_human_id : "";
+  argv[4] = /* ui_host_ptr->plugin_human_id != NULL ? ui_host_ptr->plugin_human_id :  */"humanity";
   argv[5] = ui_recv_pipe;       /* reading end */
   argv[6] = ui_send_pipe;       /* writting end */
   argv[7] = NULL;
@@ -523,7 +525,7 @@ fail_free_control:
   free(control_ptr);
 
 fail:
-  fprintf(stderr, "lv2fil UI launch failed\n");
+  fprintf(stderr, "jackfil UI launch failed\n");
   return NULL;
 }
 
