@@ -906,11 +906,9 @@ class filter_ui:
         #else:
         #    return
 
-        self.lv2logo = gtk.gdk.pixbuf_new_from_file(self.bundle_path + "/lv2logo.png")
-
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         #self.window.set_size_request(600, 400)
-        self.window.set_title("%s (4-band parametric filter)" % self.human_id)
+        self.window.set_title("Multiband parametric filter")
         self.window.set_role("plugin_ui")
 
         self.top_vbox = gtk.VBox()
@@ -959,10 +957,6 @@ class filter_ui:
 
         master_frame.add(master_box)
         misc_box.pack_start(master_frame, False, False)
-
-        #logo = gtk.Image()
-        #logo.set_from_pixbuf(self.lv2logo)
-        #misc_box.pack_start(logo, True, True)
 
         button_box = gtk.VBox()
 
@@ -1037,11 +1031,12 @@ class filter_ui:
     def on_about(self, widget):
         about = gtk.AboutDialog()
         about.set_transient_for(self.window)
-        about.set_name("4-band parametric filter")
+        about.set_name("Multiband parametric filter")
         #about.set_website(program_data['website'])
-        about.set_authors(["Nedko Arnaudov - LV2 plugin and GUI", 'Fons Adriaensen - DSP code'])
-        about.set_artists(["LV2 logo has been designed by Thorsten Wilms, based on a concept from Peter Shorthose."])
-        about.set_logo(self.lv2logo)
+        about.set_authors(
+            ["Nedko Arnaudov - JACK plugin app and external process GUI",
+             'Leonard Ritter - parts of the GUI',
+             'Fons Adriaensen - DSP code'])
         about.show()
         about.run()
         about.hide()
