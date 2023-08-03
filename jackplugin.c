@@ -85,8 +85,22 @@ int
 main(void)
 {
   const LV2_Descriptor * descr_ptr;
+  LV2_Handle h;
 
   descr_ptr = lv2_descriptor(1);
 
-  return descr_ptr == NULL;
+  if (descr_ptr == NULL) return 1;
+
+  h = descr_ptr->instantiate(
+    descr_ptr,
+    /* FIXME: sample_rate */ 48000,
+    /* FIXMEL: bundle path for UI */ "/dev/null",
+    NULL);
+  if (h == NULL)
+  {
+    LOG_ERROR("Instantiation failed.");
+    return 1;
+  }
+
+  descr_ptr->cleanup(h);
 }

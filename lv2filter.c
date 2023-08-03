@@ -73,6 +73,7 @@ lv2filter_instantiate(
   LOG_DEBUG("sample_rate = %f", sample_rate);
   LOG_DEBUG("bundle_path = \"%s\"", bundle_path);
 
+#if 0
   feature_ptr_ptr = host_features;
   while (*feature_ptr_ptr)
   {
@@ -80,6 +81,7 @@ lv2filter_instantiate(
 
     feature_ptr_ptr++;
   }
+#endif
 
   lv2filter_ptr = malloc(sizeof(struct lv2filter));
   if (lv2filter_ptr == NULL)
