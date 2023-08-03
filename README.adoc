@@ -1,5 +1,13 @@
+:keywords: jackfil, lv2fil, jack, c, gtk, lua, newt, luanewt, ncruese
+
+= jackfil - Multiband parametric equaliser
+
+.WORK IN PROGRESS
+[NOTE]
+This is Work In Progress.
+
 == Overview
-Stereo and mono LV2 plugins, four-band parametric equalisers.
+Multiband parametric equaliser, the JACK plugin (app) incarnation of lv2fil.
 Each section has an active/bypass switch, frequency, bandwidth and
 gain controls. There is also a global bypass switch and gain control.
 
@@ -23,14 +31,15 @@ parameters. It also provides frequency response widget with
 differently coloured curve for each section and separate curve for
 total equalization effect.
 
-The GUI uses the External UI extension. lv2rack (part of zynjacku)
-supports this extension. Ardour-2.8 needs patch to support the
-external UI extension.
+For UI, jackfil offers several options:
 
-The lv2fil GUI is written in python2 via py2gtk2.
+ * py2gtk2 (lv2fil style)
+ * Gtk, via lgi
+ * ncurses, via luanewt
 
 The UI does not require OpenGL software stack nor GPU for operation.
 
 == See also
 
+ * https://github.com/LADI/lv2fil.git[lv2fil, LV2 filter based on LADSPA one by Fons Adriaensen]
  * http://x42-plugins.com/x42/x42-eq[x42-eq (aka fil4.lv2), by Robin Gareus]
