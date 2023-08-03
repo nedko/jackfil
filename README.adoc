@@ -1,4 +1,4 @@
-:keywords: jackfil, lv2fil, jack, c, gtk, lua, newt, luanewt, ncruese
+:keywords: jackfil, lv2fil, jack, c, gtk, lua, newt, luanewt, ncurses
 
 = jackfil - Multiband parametric equaliser
 
