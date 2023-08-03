@@ -79,3 +79,14 @@ const LV2_Descriptor* lv2_descriptor(uint32_t index)
   LOG_DEBUG("<%s> found.", g_lv2_plugins[index].URI);
   return g_lv2_plugins + index;
 }
+
+
+int
+main(void)
+{
+  const LV2_Descriptor * descr_ptr;
+
+  descr_ptr = lv2_descriptor(1);
+
+  return descr_ptr == NULL;
+}

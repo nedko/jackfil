@@ -404,7 +404,7 @@ instantiate(
 
   control_ptr->pid = -1;
 
-  argv[0] = PYTHON;
+  argv[0] = "/usr/bin/python2";
   argv[1] = filename;
   argv[2] = plugin_uri;
   argv[3] = bundle_path;
